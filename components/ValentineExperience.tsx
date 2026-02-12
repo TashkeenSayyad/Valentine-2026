@@ -214,6 +214,7 @@ export function ValentineExperience() {
 
   const onTap = (event: React.PointerEvent<HTMLDivElement>) => {
     if (stage !== "sequence") return;
+    if (picked >= sequencePath.length) return;
     const wrap = areaRef.current;
     if (!wrap) return;
 
@@ -221,6 +222,7 @@ export function ValentineExperience() {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     const target = sequencePath[picked];
+    if (!target) return;
     const tx = target.x * rect.width;
     const ty = target.y * rect.height;
     const dist = Math.hypot(x - tx, y - ty);
