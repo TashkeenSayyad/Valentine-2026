@@ -31,3 +31,7 @@ body {
 a {
   color: inherit;
 }
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}

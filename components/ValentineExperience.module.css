@@ -2,14 +2,14 @@
   min-height: 100dvh;
   min-height: 100svh;
   position: relative;
-  color: #fff7ff;
-  transition: background 850ms ease;
+  color: #fff8ff;
+  transition: background 820ms ease;
 }
 
 .shell.warm {
-  background: radial-gradient(circle at 18% 15%, rgba(246, 166, 212, 0.18), transparent 44%),
-    radial-gradient(circle at 82% 12%, rgba(255, 200, 163, 0.2), transparent 38%),
-    linear-gradient(165deg, #1a1133, #090710 70%);
+  background: radial-gradient(circle at 14% 12%, rgba(249, 173, 216, 0.2), transparent 42%),
+    radial-gradient(circle at 82% 14%, rgba(255, 202, 173, 0.2), transparent 36%),
+    linear-gradient(165deg, #1b1238, #08060f 70%);
 }
 
 .viewport {
@@ -18,8 +18,7 @@
   min-height: 100dvh;
   min-height: 100svh;
   overflow: hidden;
-  touch-action: none;
-  padding: max(26px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom));
+  padding: max(24px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom));
 }
 
 .canvas {
@@ -27,18 +26,26 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+}
+
+.uiLayer {
+  position: relative;
+  z-index: 2;
+  min-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom)));
+  pointer-events: auto;
 }
 
 .copyBlock {
   position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: calc(100dvh - max(26px, env(safe-area-inset-top)) - max(22px, env(safe-area-inset-bottom)));
+  min-height: inherit;
   max-width: 560px;
   margin: 0 auto;
-  padding-bottom: 9.8dvh;
+  padding-bottom: 10dvh;
+  pointer-events: none;
 }
 
 .eyebrow {
@@ -46,71 +53,80 @@
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.7rem;
-  color: rgba(244, 221, 255, 0.78);
+  color: rgba(245, 226, 255, 0.78);
 }
 
 .title {
   margin: 0;
-  font-size: clamp(1.92rem, 6.1vw, 3.35rem);
+  font-size: clamp(1.9rem, 6vw, 3.3rem);
   font-weight: 560;
   line-height: 1.14;
-  text-wrap: balance;
 }
 
 .question {
   margin: 0;
-  font-size: clamp(1.72rem, 6vw, 3.22rem);
+  font-size: clamp(1.72rem, 5.9vw, 3.2rem);
   font-weight: 540;
   line-height: 1.16;
-  text-wrap: balance;
 }
 
 .caption {
-  margin-top: 14px;
+  margin-top: 13px;
   max-width: 42ch;
-  color: rgba(243, 230, 255, 0.82);
-  font-size: 0.96rem;
+  color: rgba(240, 226, 255, 0.84);
+  font-size: 0.95rem;
   line-height: 1.45;
 }
 
 .retry {
-  margin-top: 16px;
-  color: rgba(255, 224, 201, 0.9);
+  margin-top: 15px;
+  color: rgba(255, 224, 207, 0.9);
+}
+
+.sequenceTarget {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  margin-left: -32px;
+  margin-top: -32px;
+  border: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 40% 30%, rgba(255, 248, 255, 0.8), rgba(255, 193, 232, 0.2) 60%, transparent 70%);
+  box-shadow: 0 0 28px rgba(255, 165, 218, 0.38);
 }
 
 .questionWrap {
-  transition: transform 330ms ease, opacity 330ms ease;
-  will-change: transform;
+  transition: transform 320ms ease, opacity 320ms ease;
+}
+
+.sequenceTarget,
+.questionWrap,
+.holdStar,
+.replay,
+.debugPanel,
+.debugToggle,
+.debugBody {
+  pointer-events: auto;
 }
 
 .holdStar {
-  width: 90px;
-  height: 90px;
-  margin-top: 30px;
+  width: 92px;
+  height: 92px;
+  min-height: 44px;
+  margin-top: 28px;
   border: none;
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 34%, #fff1f6, #ffc4d8 72%);
+  background: radial-gradient(circle at 38% 34%, #fff2f8, #ffc6db 73%);
   position: relative;
   display: grid;
   place-items: center;
-  cursor: pointer;
-  touch-action: none;
-  box-shadow: 0 0 34px rgba(255, 176, 212, 0.58), inset 0 0 11px rgba(255, 248, 252, 0.84);
+  box-shadow: 0 0 34px rgba(255, 174, 213, 0.6), inset 0 0 11px rgba(255, 248, 252, 0.84);
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .holdStarActive {
   transform: scale(0.985);
-  box-shadow: 0 0 40px rgba(255, 161, 203, 0.72), inset 0 0 13px rgba(255, 250, 252, 0.9);
-}
-
-.innerStar {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: #6d2b43;
-  font-size: 1.35rem;
+  box-shadow: 0 0 42px rgba(255, 160, 206, 0.75), inset 0 0 13px rgba(255, 253, 255, 0.9);
 }
 
 .ring {
@@ -128,21 +144,30 @@
 }
 
 .ringTrack {
-  stroke: rgba(244, 225, 255, 0.36);
+  stroke: rgba(248, 228, 255, 0.4);
 }
 
 .ringProgress {
-  stroke: rgba(255, 223, 235, 0.98);
-  transition: stroke-dashoffset 30ms linear;
+  stroke: rgba(255, 236, 245, 0.99);
+  transition: stroke-dashoffset 28ms linear;
+}
+
+.innerStar {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #6f2e47;
+  font-size: 1.35rem;
 }
 
 .card {
-  margin-top: 20px;
+  margin-top: 18px;
   max-width: 420px;
   padding: 24px 22px;
   border-radius: 18px;
-  background: linear-gradient(160deg, rgba(35, 18, 47, 0.76), rgba(25, 14, 31, 0.52));
-  border: 1px solid rgba(245, 221, 255, 0.23);
+  background: linear-gradient(160deg, rgba(35, 18, 48, 0.76), rgba(24, 13, 33, 0.52));
+  border: 1px solid rgba(248, 225, 255, 0.25);
   backdrop-filter: blur(8px);
 }
 
@@ -163,24 +188,25 @@
 }
 
 .details dt {
-  color: rgba(241, 221, 255, 0.78);
+  color: rgba(242, 225, 255, 0.8);
 }
 
 .details dd {
   margin: 0;
   letter-spacing: 0.08em;
-  color: rgba(255, 231, 214, 0.97);
+  color: rgba(255, 231, 216, 0.98);
 }
 
 .replay {
   margin-top: 20px;
   border: none;
   background: transparent;
-  color: rgba(248, 232, 255, 0.95);
+  color: rgba(248, 233, 255, 0.95);
   text-decoration: underline;
   text-underline-offset: 3px;
   padding: 0;
   font-size: 0.93rem;
+  min-height: 44px;
 }
 
 .pulse {
@@ -189,10 +215,48 @@
   height: 20px;
   margin-left: -10px;
   margin-top: -10px;
-  border: 1px solid rgba(255, 214, 230, 0.95);
+  border: 1px solid rgba(255, 216, 232, 0.95);
   border-radius: 50%;
   pointer-events: none;
   animation: pop 380ms ease-out forwards;
+}
+
+.debugPanel {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.debugToggle {
+  border: 1px solid rgba(255, 223, 247, 0.36);
+  background: rgba(14, 13, 24, 0.66);
+  color: #f9f0ff;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  min-height: 44px;
+}
+
+.debugBody {
+  width: min(280px, 80vw);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(10, 9, 18, 0.75);
+  border: 1px solid rgba(255, 223, 247, 0.25);
+  color: rgba(250, 238, 255, 0.95);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.debugBody p {
+  margin: 2px 0;
+}
+
+.tap {
+  touch-action: manipulation;
 }
 
 @keyframes pop {

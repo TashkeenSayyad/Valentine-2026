@@ -79,3 +79,6 @@ Then configure repository Pages source to the published branch.
 
 - Designed mobile-first and tuned for ~390px width.
 - No external image assets; all stars/lines/glows are procedural.
+
+- Robust cross-device pointer input handling (mouse/touch/trackpad) with pointer capture for hold interaction.
+- Dev-only **Input Debug** panel to inspect event type, pointerType, target, and capture state.
