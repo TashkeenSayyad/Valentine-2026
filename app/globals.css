@@ -1,10 +1,7 @@
 :root {
-  --bg-top: #0e1230;
-  --bg-bottom: #05060f;
-  --ink: #f6f4ff;
-  --soft: rgba(237, 233, 255, 0.72);
-  --accent: #b9a0ff;
-  --warm: #ffcfab;
+  --bg-top: #090d1d;
+  --bg-bottom: #04050a;
+  --ink: #f3f0ff;
 }
 
 * {
@@ -17,17 +14,18 @@ body {
   padding: 0;
   width: 100%;
   min-height: 100%;
-  background: radial-gradient(circle at 18% 8%, rgba(146, 120, 255, 0.2), transparent 45%),
-    radial-gradient(circle at 78% 14%, rgba(255, 185, 139, 0.09), transparent 40%),
-    linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+  background: radial-gradient(circle at 18% 8%, rgba(111, 102, 182, 0.18), transparent 45%),
+    radial-gradient(circle at 78% 14%, rgba(178, 154, 107, 0.08), transparent 40%),
+    linear-gradient(170deg, var(--bg-top), var(--bg-bottom));
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
   overflow: hidden;
 }
 
-a {
-  color: inherit;
+button {
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
 }

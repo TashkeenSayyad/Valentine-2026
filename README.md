@@ -1,31 +1,17 @@
-# Valentine-2026 · Constellation Reveal Microsite
+# Violet Night, Always · Where My Heart Rests
 
-A cinematic, mobile-first Valentine microsite built with **Next.js App Router + TypeScript**.
+A cinematic single-page Valentine microsite (Next.js + TypeScript) designed as a luxury interactive love letter for Anusha.
 
-## Experience highlights
+## Experience structure
 
-- Fullscreen procedural night sky rendered in Canvas 2D (no image assets).
-- Guided star-tap sequence with magnetic snapping + pulse feedback.
-- Animated constellation reveal into a luminous heart.
-- Post-reveal ask state:
-  - **Yes** = press and hold a bright star for ~1.5 seconds with smooth ring progress.
-  - **No** = swipe the question text away to elegantly reset with: “Let’s try that again.”
-- Confirmation scene with an elegant date card:
-  - When: ______
-  - Where: ______
-  - Note: ______
-- Replay flow.
-- Respect for `prefers-reduced-motion`.
-- Safe-area + dynamic viewport support with `100svh/100dvh`.
+1. **The Night** — stillness and scale
+2. **The Change** — central warmth entering the sky
+3. **The Moments** — three intimate memory lines
+4. **The Heart** — abstract heart constellation + eclipse reveal
+5. **The Promise** — hold interaction (“Hold to make it ours”)
+6. **Final State** — devotion lines and whisper: “I was always yours.”
 
-## Stack
-
-- Next.js 14 (App Router)
-- React 18 + TypeScript
-- CSS Modules
-- Canvas 2D animation
-
-## Run locally
+## Setup
 
 ```bash
 npm install
@@ -34,7 +20,7 @@ npm run dev
 
 Open <http://localhost:3000>.
 
-## Production build
+## Build
 
 ```bash
 npm run build
@@ -73,9 +59,55 @@ npm install --save-dev gh-pages
 npx gh-pages -d docs
 ```
 
-Then configure repository Pages source to the published branch.
+Deploy the `out/` directory to your Pages branch.
 
-## Notes
+## Performance notes
 
-- Designed mobile-first and tuned for ~390px width.
-- No external image assets; all stars/lines/glows are procedural.
+- One `requestAnimationFrame` loop total for visuals + hold ring updates.
+- React state is not updated per frame.
+- DPR clamped (`Math.min(devicePixelRatio, 2)`; lower on low-power mode).
+- Adaptive quality on low-power devices:
+  - reduced star count
+  - reduced dust complexity
+  - fewer costly effects
+- `prefers-reduced-motion` is respected:
+  - reduced parallax and movement
+  - simplified transitions
+
+## Input handling guarantees
+
+- Pointer Events for all critical interactions.
+- Hold interaction uses pointer capture (`setPointerCapture` / `releasePointerCapture`).
+- Background canvas uses `pointer-events: none`.
+- Interactive elements are real `<button>` targets with `touch-action: manipulation` and >=44px touch size.
+- Dev-only **Input Debug** panel included.
+
+## Credits (online resources)
+
+1. **Google Fonts** (served by Google, loaded with `next/font/google`):
+   - Cormorant Garamond: <https://fonts.google.com/specimen/Cormorant+Garamond>
+   - Inter: <https://fonts.google.com/specimen/Inter>
+   - License: SIL Open Font License (OFL).
+
+2. **Noise / film grain reference texture**:
+   - Three.js example perlin texture:
+     <https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/perlin-512.png>
+   - Project license: MIT (Three.js repository).
+   - Used with graceful fallback to generated procedural noise if unavailable.
+
+3. **Lens flare texture** (romantic halo overlay):
+   - Three.js example lensflare texture:
+     <https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/lensflare/lensflare0.png>
+   - Project license: MIT (Three.js repository).
+
+4. **Romantic quote source**:
+   - Quotable API (love-tag lines): <https://api.quotable.io/>
+   - License: Open source project (MIT) and API terms apply.
+   - App includes local fallback lines if request fails.
+
+## Optional self-hosting
+
+If you want zero runtime dependency on remote texture/font delivery:
+
+- Self-host fonts in `/public/fonts` and switch from `next/font/google` to `next/font/local`.
+- Copy the texture into `/public/textures/perlin-512.png` and update the fetch URL in `ValentineExperience.tsx`.
