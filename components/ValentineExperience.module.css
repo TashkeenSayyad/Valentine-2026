@@ -1,22 +1,22 @@
 .shell {
   min-height: 100dvh;
   min-height: 100svh;
-  color: #f6f2ff;
-  background: radial-gradient(circle at 18% 10%, rgba(99, 95, 140, 0.16), transparent 44%),
-    linear-gradient(170deg, #070a16, #04050a 72%);
+  color: #f5f1ff;
+  background: radial-gradient(circle at 18% 10%, rgba(101, 92, 156, 0.17), transparent 44%),
+    linear-gradient(170deg, #060914, #030409 72%);
   transition: background 1200ms ease;
 }
 
 .shell.warm {
-  background: radial-gradient(circle at 20% 12%, rgba(116, 109, 168, 0.22), transparent 45%),
-    radial-gradient(circle at 76% 16%, rgba(188, 163, 126, 0.12), transparent 40%),
-    linear-gradient(170deg, #0e1020, #080810 72%);
+  background: radial-gradient(circle at 20% 12%, rgba(122, 112, 183, 0.23), transparent 45%),
+    radial-gradient(circle at 76% 16%, rgba(183, 158, 120, 0.13), transparent 40%),
+    linear-gradient(170deg, #0d1020, #070810 72%);
 }
 
 .shell.finalGlow {
-  background: radial-gradient(circle at 20% 14%, rgba(145, 132, 202, 0.25), transparent 45%),
-    radial-gradient(circle at 78% 18%, rgba(213, 185, 147, 0.17), transparent 36%),
-    linear-gradient(170deg, #191631, #0a0a16 70%);
+  background: radial-gradient(circle at 20% 14%, rgba(143, 129, 205, 0.26), transparent 45%),
+    radial-gradient(circle at 78% 18%, rgba(213, 183, 142, 0.18), transparent 36%),
+    linear-gradient(170deg, #18152f, #090a16 70%);
 }
 
 .viewport {
@@ -44,7 +44,7 @@
 
 .content {
   min-height: inherit;
-  max-width: 680px;
+  max-width: 700px;
   margin: 0 auto;
   display: grid;
   align-content: center;
@@ -56,31 +56,49 @@
 .textPrimary,
 .textSecondary,
 .memoryLine,
-.promiseLine {
+.promiseLine,
+.whisper {
   margin: 0;
   text-wrap: balance;
 }
 
+.textPrimary,
+.question,
+.always {
+  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.textSecondary,
+.memoryLine,
+.promiseLine,
+.holdLabel,
+.control,
+.replay,
+.whisper {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 .textPrimary {
-  font-size: clamp(1.5rem, 5.6vw, 2.6rem);
-  line-height: 1.3;
+  font-size: clamp(1.6rem, 5.8vw, 2.8rem);
+  line-height: 1.28;
   letter-spacing: 0.015em;
-  color: rgba(240, 236, 255, 0.95);
+  color: rgba(243, 238, 255, 0.95);
 }
 
 .textSecondary {
-  font-size: clamp(1.1rem, 3.8vw, 1.58rem);
+  font-size: clamp(1.1rem, 3.9vw, 1.62rem);
   line-height: 1.45;
-  max-width: 29ch;
-  color: rgba(224, 217, 245, 0.84);
+  max-width: 30ch;
+  color: rgba(227, 219, 246, 0.83);
 }
 
 .blurIn {
-  animation: blurIn 1300ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
+  animation: blurIn 1400ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
 }
 
 .blurInDelay {
-  animation: blurIn 1300ms cubic-bezier(0.2, 0.75, 0.2, 1) 250ms both;
+  animation: blurIn 1400ms cubic-bezier(0.2, 0.75, 0.2, 1) 300ms both;
 }
 
 .memoryStack {
@@ -90,17 +108,17 @@
 }
 
 .memoryLine {
-  color: rgba(236, 230, 251, 0.42);
-  font-size: clamp(1.02rem, 3.5vw, 1.35rem);
-  line-height: 1.5;
+  color: rgba(237, 231, 250, 0.43);
+  font-size: clamp(1.02rem, 3.5vw, 1.36rem);
+  line-height: 1.52;
   filter: blur(5px);
   transform: translateY(4px);
   opacity: 0;
-  transition: opacity 850ms ease, filter 850ms ease, transform 850ms ease, color 850ms ease;
+  transition: opacity 900ms ease, filter 900ms ease, transform 900ms ease, color 900ms ease;
 }
 
 .memoryVisible {
-  color: rgba(239, 233, 255, 0.9);
+  color: rgba(241, 236, 255, 0.91);
   filter: blur(0);
   transform: translateY(0);
   opacity: 1;
@@ -108,25 +126,23 @@
 
 .question {
   margin: 0;
-  font-size: clamp(2.1rem, 7vw, 4.2rem);
+  font-size: clamp(2.08rem, 6.9vw, 4.24rem);
   line-height: 1.14;
-  font-weight: 540;
   letter-spacing: 0.01em;
 }
 
 .holdLabel {
   margin: -6px 0 0;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: rgba(226, 218, 245, 0.78);
+  letter-spacing: 0.16em;
+  color: rgba(226, 218, 245, 0.8);
   font-size: 0.72rem;
 }
 
 .always {
   margin: 0;
-  font-size: clamp(3rem, 10.4vw, 6.8rem);
+  font-size: clamp(3.1rem, 10.5vw, 7rem);
   line-height: 1;
-  font-weight: 560;
   letter-spacing: 0.02em;
   animation: liftIn 1200ms ease both;
 }
@@ -137,18 +153,27 @@
 }
 
 .promiseLine {
-  color: rgba(239, 231, 252, 0.88);
-  font-size: clamp(1.05rem, 3.8vw, 1.45rem);
+  color: rgba(240, 232, 252, 0.89);
+  font-size: clamp(1.05rem, 3.8vw, 1.46rem);
   line-height: 1.42;
   opacity: 0;
-  animation: promiseIn 900ms ease forwards;
+  animation: promiseIn 1000ms ease forwards;
 }
 
-.promiseLine:nth-child(1) { animation-delay: 240ms; }
-.promiseLine:nth-child(2) { animation-delay: 420ms; }
-.promiseLine:nth-child(3) { animation-delay: 600ms; }
-.promiseLine:nth-child(4) { animation-delay: 780ms; }
-.promiseLine:nth-child(5) { animation-delay: 960ms; }
+.promiseLine:nth-child(1) { animation-delay: 260ms; }
+.promiseLine:nth-child(2) { animation-delay: 520ms; }
+.promiseLine:nth-child(3) { animation-delay: 820ms; }
+.promiseLine:nth-child(4) { animation-delay: 1120ms; }
+.promiseLine:nth-child(5) { animation-delay: 1420ms; }
+
+.whisper {
+  margin-top: 10px;
+  font-size: 0.74rem;
+  letter-spacing: 0.07em;
+  color: rgba(228, 219, 247, 0.42);
+  opacity: 0;
+  animation: whisperIn 1500ms ease 1900ms forwards;
+}
 
 .control,
 .centerLight,
@@ -162,9 +187,9 @@
 
 .control {
   border-radius: 999px;
-  border: 1px solid rgba(231, 223, 249, 0.24);
+  border: 1px solid rgba(232, 223, 250, 0.24);
   background: rgba(11, 12, 22, 0.5);
-  color: rgba(245, 240, 255, 0.95);
+  color: rgba(246, 241, 255, 0.95);
   font-size: 0.69rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -211,7 +236,8 @@
 }
 
 .ringProgress {
-  stroke: rgba(246, 235, 211, 0.96);
+  stroke: rgba(188, 170, 255, 0.96);
+  filter: drop-shadow(0 0 4px rgba(198, 176, 255, 0.55));
   transition: stroke-dashoffset 24ms linear;
 }
 
@@ -300,6 +326,15 @@
   }
 }
 
+@keyframes whisperIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shell,
   .ringProgress,
@@ -307,7 +342,8 @@
   .textSecondary,
   .memoryLine,
   .promiseLine,
-  .always {
+  .always,
+  .whisper {
     transition-duration: 0ms;
     animation-duration: 1ms;
   }

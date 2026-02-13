@@ -2,24 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ValentineExperience.module.css";
-import { heartConstellation, randomStarsSeed } from "@/lib/constellation";
+import { anushaTracePath, heartConstellation, randomStarsSeed } from "@/lib/constellation";
 
 type Scene = 1 | 2 | 3 | 4 | 5 | 6;
 
-type Star = {
-  x: number;
-  y: number;
-  r: number;
-  depth: number;
-  phase: number;
-};
-
-type DebugInfo = {
-  event: string;
-  pointerType: string;
-  target: string;
-  capture: boolean;
-};
+type Star = { x: number; y: number; r: number; depth: number; phase: number };
+type Dust = { x: number; y: number; depth: number; speed: number; angle: number; length: number };
+type DebugInfo = { event: string; pointerType: string; target: string; capture: boolean };
 
 const HOLD_DURATION_MS = 1500;
 const MEMORY_LINES = [
@@ -33,7 +22,6 @@ export function ValentineExperience() {
   const rootRef = useRef<HTMLDivElement>(null);
   const holdButtonRef = useRef<HTMLButtonElement>(null);
   const ringProgressRef = useRef<SVGCircleElement>(null);
-  const ringLen = 2 * Math.PI * 22;
 
   const pointerOffsetRef = useRef({ x: 0, y: 0 });
   const enteredSceneAtRef = useRef(0);
@@ -43,18 +31,21 @@ export function ValentineExperience() {
   const shimmerRef = useRef(0);
   const beamFlashRef = useRef(0);
   const wheelLockRef = useRef(false);
+  const grainPatternRef = useRef<CanvasPattern | null>(null);
+
+  const ringLength = 2 * Math.PI * 22;
 
   const [scene, setScene] = useState<Scene>(1);
-  const [centerActivated, setCenterActivated] = useState(false);
   const [memoryVisibleCount, setMemoryVisibleCount] = useState(0);
-  const [debugEnabled, setDebugEnabled] = useState(process.env.NODE_ENV !== "production");
+  const [centerActivated, setCenterActivated] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [debugEnabled, setDebugEnabled] = useState(process.env.NODE_ENV !== "production");
   const [debug, setDebug] = useState<DebugInfo>({ event: "idle", pointerType: "-", target: "-", capture: false });
 
   const reducedMotion = useReducedMotion();
   const lowPower = useLowPowerMode();
-
-  const starCount = lowPower ? Math.floor(randomStarsSeed * 0.62) : randomStarsSeed;
+  const starCount = lowPower ? Math.floor(randomStarsSeed * 0.6) : randomStarsSeed;
+  const dustCount = lowPower ? 90 : 170;
 
   const stars = useMemo<Star[]>(() => {
     const seeded = (seed: number) => {
@@ -64,17 +55,32 @@ export function ValentineExperience() {
     return Array.from({ length: starCount }, (_, i) => ({
       x: seeded(i * 31.77),
       y: seeded(i * 41.37),
-      r: 0.45 + seeded(i * 71.3) * 1.7,
-      depth: 0.34 + seeded(i * 15.9) * 1.2,
+      r: 0.35 + seeded(i * 71.3) * 1.9,
+      depth: seeded(i * 12.13),
       phase: seeded(i * 91.1) * Math.PI * 2
     }));
   }, [starCount]);
+
+  const dust = useMemo<Dust[]>(() => {
+    const seeded = (seed: number) => {
+      const value = Math.sin(seed) * 10000;
+      return value - Math.floor(value);
+    };
+    return Array.from({ length: dustCount }, (_, i) => ({
+      x: seeded(i * 18.71),
+      y: seeded(i * 27.19),
+      depth: seeded(i * 42.1),
+      speed: 0.00002 + seeded(i * 7.3) * 0.00008,
+      angle: seeded(i * 14.9) * Math.PI,
+      length: 5 + seeded(i * 5.1) * 18
+    }));
+  }, [dustCount]);
 
   const updateDebug = useCallback((event: string, pointerType: string, target: string, capture = false) => {
     setDebug({ event, pointerType, target, capture });
   }, []);
 
-  const goToScene = useCallback((next: Scene) => {
+  const setSceneWithTime = useCallback((next: Scene) => {
     setScene(next);
     enteredSceneAtRef.current = performance.now();
   }, []);
@@ -82,29 +88,24 @@ export function ValentineExperience() {
   const nextScene = useCallback((pointerType: string, target: string) => {
     setScene((prev) => {
       const next = Math.min(prev + 1, 5) as Scene;
-      if (next !== prev) {
-        enteredSceneAtRef.current = performance.now();
-      }
+      if (next !== prev) enteredSceneAtRef.current = performance.now();
       updateDebug("advance", pointerType, target, false);
       return next;
     });
   }, [updateDebug]);
 
   const replay = useCallback((event?: React.PointerEvent<HTMLButtonElement>) => {
-    if (event) {
-      updateDebug("pointerdown", event.pointerType, "begin-again", false);
-    }
-    goToScene(1);
+    if (event) updateDebug("pointerdown", event.pointerType, "begin-again", false);
+    setSceneWithTime(1);
     setCenterActivated(false);
+    setMemoryVisibleCount(0);
     holdStartAtRef.current = null;
     holdPointerIdRef.current = null;
     wavePulseRef.current = 0;
     shimmerRef.current = 0;
     beamFlashRef.current = 0;
-    if (ringProgressRef.current) {
-      ringProgressRef.current.style.strokeDashoffset = `${ringLen}`;
-    }
-  }, [goToScene, ringLen, updateDebug]);
+    if (ringProgressRef.current) ringProgressRef.current.style.strokeDashoffset = `${ringLength}`;
+  }, [ringLength, setSceneWithTime, updateDebug]);
 
   useEffect(() => {
     enteredSceneAtRef.current = performance.now();
@@ -114,9 +115,22 @@ export function ValentineExperience() {
   }, []);
 
   useEffect(() => {
+    if (scene !== 3) {
+      setMemoryVisibleCount(0);
+      return;
+    }
+    setMemoryVisibleCount(1);
+    const t1 = window.setTimeout(() => setMemoryVisibleCount(2), reducedMotion ? 320 : 1800);
+    const t2 = window.setTimeout(() => setMemoryVisibleCount(3), reducedMotion ? 640 : 3800);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [reducedMotion, scene]);
+
+  useEffect(() => {
     const root = rootRef.current;
     if (!root || reducedMotion) return;
-
     const onMove = (event: PointerEvent) => {
       const rect = root.getBoundingClientRect();
       pointerOffsetRef.current = {
@@ -124,7 +138,6 @@ export function ValentineExperience() {
         y: (event.clientY - rect.top) / rect.height - 0.5
       };
     };
-
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => window.removeEventListener("pointermove", onMove);
   }, [reducedMotion]);
@@ -132,41 +145,59 @@ export function ValentineExperience() {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-
     const onWheel = (event: WheelEvent) => {
       if (scene >= 5 || Math.abs(event.deltaY) < 24 || wheelLockRef.current) return;
       wheelLockRef.current = true;
       window.setTimeout(() => {
         wheelLockRef.current = false;
-      }, 380);
+      }, 400);
       nextScene("wheel", "scene-scroll");
     };
-
     root.addEventListener("wheel", onWheel, { passive: true });
     return () => root.removeEventListener("wheel", onWheel);
   }, [nextScene, scene]);
 
-
   useEffect(() => {
-    if (scene !== 3) {
-      setMemoryVisibleCount(0);
-      return;
-    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    setMemoryVisibleCount(1);
-    const first = window.setTimeout(() => setMemoryVisibleCount(2), reducedMotion ? 380 : 1450);
-    const second = window.setTimeout(() => setMemoryVisibleCount(3), reducedMotion ? 760 : 2900);
-    return () => {
-      window.clearTimeout(first);
-      window.clearTimeout(second);
+    const createFallbackPattern = () => {
+      const noise = document.createElement("canvas");
+      noise.width = 128;
+      noise.height = 128;
+      const nctx = noise.getContext("2d");
+      if (!nctx) return;
+      const img = nctx.createImageData(128, 128);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const v = Math.floor(Math.random() * 255);
+        img.data[i] = v;
+        img.data[i + 1] = v;
+        img.data[i + 2] = v;
+        img.data[i + 3] = 18;
+      }
+      nctx.putImageData(img, 0, 0);
+      const main = canvas.getContext("2d");
+      if (!main) return;
+      grainPatternRef.current = main.createPattern(noise, "repeat");
     };
-  }, [scene, reducedMotion]);
+
+    const texture = new Image();
+    texture.crossOrigin = "anonymous";
+    texture.src = "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/perlin-512.png";
+    texture.onload = () => {
+      const main = canvas.getContext("2d");
+      if (!main) return;
+      grainPatternRef.current = main.createPattern(texture, "repeat");
+    };
+    texture.onerror = createFallbackPattern;
+
+    createFallbackPattern();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const root = rootRef.current;
     if (!canvas || !root) return;
-
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
@@ -176,7 +207,7 @@ export function ValentineExperience() {
 
     const resize = () => {
       const rect = root.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1.4 : 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1.5 : 2);
       width = rect.width;
       height = rect.height;
       canvas.width = Math.round(width * dpr);
@@ -186,14 +217,12 @@ export function ValentineExperience() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    const drawConstellationPath = (progress: number, stroke: string, lineWidth: number) => {
+    const drawPath = (points: { x: number; y: number }[], progress: number, stroke: string, lineWidth: number) => {
       if (progress <= 0) return;
-      const points = heartConstellation.map((p) => ({ x: p.x * width, y: p.y * height }));
       let total = 0;
       for (let i = 1; i < points.length; i += 1) {
         total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
       }
-
       const target = total * Math.min(progress, 1);
       let drawn = 0;
       ctx.beginPath();
@@ -219,26 +248,48 @@ export function ValentineExperience() {
       ctx.lineWidth = lineWidth;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.shadowBlur = 14;
-      ctx.shadowColor = "rgba(180,166,235,0.45)";
       ctx.stroke();
-      ctx.shadowBlur = 0;
     };
 
-    const updateHoldProgressRing = (now: number) => {
-      const started = holdStartAtRef.current;
-      if (!started || !ringProgressRef.current) return;
+    const heartPoints = heartConstellation.map((p) => ({ x: p.x * width, y: p.y * height }));
+    const namePoints = anushaTracePath.map((p) => ({ x: p.x * width, y: p.y * height }));
 
-      const ratio = Math.min((now - started) / HOLD_DURATION_MS, 1);
-      ringProgressRef.current.style.strokeDashoffset = `${ringLen * (1 - ratio)}`;
-
+    const updateHoldRing = (now: number) => {
+      if (!holdStartAtRef.current || !ringProgressRef.current) return;
+      const ratio = Math.min((now - holdStartAtRef.current) / HOLD_DURATION_MS, 1);
+      ringProgressRef.current.style.strokeDashoffset = `${ringLength * (1 - ratio)}`;
       if (ratio >= 1) {
         holdStartAtRef.current = null;
         holdPointerIdRef.current = null;
-        wavePulseRef.current = 1;
         shimmerRef.current = 1;
-        beamFlashRef.current = 1;
-        goToScene(6);
+        wavePulseRef.current = 1;
+        window.setTimeout(() => {
+          beamFlashRef.current = 1;
+          setSceneWithTime(6);
+        }, 300);
+      }
+    };
+
+    const drawAurora = (time: number, intensity: number) => {
+      const baseY = height * 0.12;
+      const layers = lowPower ? 2 : 3;
+      for (let i = 0; i < layers; i += 1) {
+        const y = baseY + i * 54 + Math.sin(time * 0.00015 + i) * (reducedMotion ? 2 : 9);
+        const grad = ctx.createLinearGradient(0, y, width, y + 180);
+        grad.addColorStop(0, `rgba(104, 89, 170, ${0.07 * intensity})`);
+        grad.addColorStop(0.5, `rgba(158, 138, 216, ${0.11 * intensity})`);
+        grad.addColorStop(1, "rgba(56, 43, 101, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (let x = 0; x <= width; x += 24) {
+          const offset = Math.sin(x * 0.01 + time * 0.00022 + i * 0.8) * (reducedMotion ? 4 : 14);
+          ctx.lineTo(x, y + offset + x * 0.02);
+        }
+        ctx.lineTo(width, y + 220);
+        ctx.lineTo(0, y + 220);
+        ctx.closePath();
+        ctx.fill();
       }
     };
 
@@ -247,77 +298,137 @@ export function ValentineExperience() {
       const px = reducedMotion ? 0 : pointerOffsetRef.current.x;
       const py = reducedMotion ? 0 : pointerOffsetRef.current.y;
 
-      updateHoldProgressRing(time);
-
+      updateHoldRing(time);
       ctx.clearRect(0, 0, width, height);
 
-      // Moonlight beams (subtle volumetric effect)
-      const beamMotion = reducedMotion ? 0 : time * 0.00005;
-      const beamAlpha = 0.08 + (scene >= 2 ? 0.035 : 0) + beamFlashRef.current * 0.08;
-      for (let i = 0; i < 3; i += 1) {
-        const angle = (-0.8 + i * 0.35) + beamMotion * (i + 1);
-        const x = width * (0.5 + Math.sin(angle) * 0.28);
-        const y = -height * 0.15;
-        const grad = ctx.createRadialGradient(x, y, 20, x, y, Math.max(width, height) * 1.12);
-        grad.addColorStop(0, `rgba(236, 227, 200, ${beamAlpha})`);
-        grad.addColorStop(0.2, `rgba(204, 195, 231, ${beamAlpha * 0.36})`);
+      // Moonlight beams
+      const beamMotion = reducedMotion ? 0 : time * 0.000045;
+      const beamLayers = lowPower ? 2 : 4;
+      const beamStrength = 0.06 + (scene >= 2 ? 0.04 : 0) + beamFlashRef.current * 0.09;
+      for (let i = 0; i < beamLayers; i += 1) {
+        const angle = (-0.7 + i * 0.24) + beamMotion * (i + 1);
+        const x = width * (0.52 + Math.sin(angle) * 0.28);
+        const y = -height * 0.2;
+        const grad = ctx.createRadialGradient(x, y, 20, x, y, Math.max(width, height) * 1.1);
+        grad.addColorStop(0, `rgba(216,196,233,${beamStrength})`);
+        grad.addColorStop(0.25, `rgba(180,161,226,${beamStrength * 0.5})`);
         grad.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(x, y, Math.max(width, height) * 1.16, 0, Math.PI * 2);
+        ctx.arc(x, y, Math.max(width, height) * 1.12, 0, Math.PI * 2);
         ctx.fill();
       }
-      beamFlashRef.current = Math.max(beamFlashRef.current - 0.016, 0);
+      beamFlashRef.current = Math.max(0, beamFlashRef.current - 0.018);
 
-      const reveal = Math.min(scene / 4, 1);
+      drawAurora(time, scene >= 2 ? 1 : 0.5);
 
-      stars.forEach((star, i) => {
-        const twinkle = reducedMotion ? 0.86 : 0.64 + Math.sin(time * 0.0012 + star.phase) * 0.16;
-        const gate = scene === 1 ? Math.max(0, sceneAge * 0.22 - i / stars.length) : 1;
-        if (gate <= 0) return;
-
-        let sx = star.x * width + px * star.depth * 10;
-        let sy = star.y * height + py * star.depth * 7;
-
-        if (scene >= 2 && !reducedMotion) {
-          const cx = width * 0.5;
-          const cy = height * 0.42;
-          sx += (cx - sx) * 0.00045 * (Math.sin(time * 0.001 + i) + 1.4);
-          sy += (cy - sy) * 0.00045 * (Math.cos(time * 0.0012 + i) + 1.4);
-        }
-
-        const alpha = (0.14 + reveal * 0.4) * gate;
+      // Galaxy dust
+      dust.forEach((d, i) => {
+        const driftX = ((time * d.speed * 35 + d.x) % 1) * width;
+        const driftY = ((time * d.speed * 14 + d.y) % 1) * height;
+        const dd = d.depth * 0.7 + 0.3;
+        const dx = Math.cos(d.angle) * d.length * dd;
+        const dy = Math.sin(d.angle) * d.length * dd;
         ctx.beginPath();
-        ctx.arc(sx, sy, star.r * twinkle, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(233, 228, 246, ${alpha})`;
+        ctx.moveTo(driftX + px * 7 * dd, driftY + py * 5 * dd);
+        ctx.lineTo(driftX + dx, driftY + dy);
+        ctx.strokeStyle = `rgba(205, 198, 228, ${0.02 + dd * 0.06})`;
+        ctx.lineWidth = i % 8 === 0 ? 1.2 : 0.7;
+        ctx.stroke();
+      });
+
+      // Starfield with depth blur approximation
+      stars.forEach((star) => {
+        const depth = star.depth;
+        const layer = depth > 0.66 ? 2 : depth > 0.33 ? 1 : 0;
+        const twinkle = reducedMotion ? 0.9 : 0.7 + Math.sin(time * 0.0012 + star.phase) * 0.17;
+        const pull = holdStartAtRef.current ? 0.015 : 0;
+        const cx = width * 0.5;
+        const cy = height * 0.5;
+        const sxBase = star.x * width + px * (layer + 1) * 8;
+        const syBase = star.y * height + py * (layer + 1) * 6;
+        const sx = sxBase + (cx - sxBase) * pull;
+        const sy = syBase + (cy - syBase) * pull;
+        const blurAlpha = layer === 0 ? 0.22 : layer === 1 ? 0.36 : 0.56;
+        const radius = star.r * twinkle * (layer === 2 ? 1.22 : layer === 1 ? 1 : 0.86);
+        if (layer === 0 && !lowPower) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, radius * 2.1, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(180, 176, 216, ${blurAlpha * 0.35})`;
+          ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(232, 228, 245, ${blurAlpha})`;
         ctx.fill();
       });
 
+      // Scene-specific dramatic elements
       if (scene >= 4) {
-        const pathDraw = reducedMotion ? 1 : Math.min(sceneAge * 0.48, 1);
-        drawConstellationPath(pathDraw, "rgba(228, 218, 246, 0.92)", lowPower ? 1.45 : 1.8);
+        const reveal = reducedMotion ? 1 : Math.min(sceneAge * 0.42, 1);
+        const nameReveal = Math.min(Math.max((sceneAge - 0.6) / 2.2, 0), 1);
 
-        const pulse = reducedMotion ? 0.75 : 0.7 + Math.sin(time * 0.0022) * 0.08;
-        const shimmer = shimmerRef.current;
-        heartConstellation.slice(0, -1).forEach((p) => {
-          const x = p.x * width;
-          const y = p.y * height;
+        // name handwriting trace
+        drawPath(namePoints, nameReveal, "rgba(231, 220, 250, 0.65)", 1.5);
+        if (nameReveal > 0 && nameReveal < 1) {
+          const idx = Math.min(Math.floor(nameReveal * (namePoints.length - 1)), namePoints.length - 1);
+          const p = namePoints[idx];
           ctx.beginPath();
-          ctx.arc(x, y, 2.7 + pulse + shimmer * 1.2, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(251, 244, 230, ${0.75 + shimmer * 0.2})`;
-          ctx.shadowBlur = 10 + shimmer * 5;
-          ctx.shadowColor = "rgba(224, 192, 144, 0.45)";
+          ctx.arc(p.x, p.y, 4.2, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(246, 234, 210, 0.92)";
+          ctx.shadowBlur = 14;
+          ctx.shadowColor = "rgba(233, 204, 152, 0.58)";
           ctx.fill();
-        });
-        ctx.shadowBlur = 0;
-        shimmerRef.current = Math.max(shimmerRef.current - 0.016, 0);
+          ctx.shadowBlur = 0;
+        }
+
+        drawPath(heartPoints, reveal, "rgba(239, 227, 248, 0.92)", lowPower ? 1.4 : 1.9);
+
+        // Eclipse reveal event
+        const eclipse = Math.min(Math.max((sceneAge - 1.2) / 3, 0), 1);
+        if (eclipse > 0 && eclipse < 1) {
+          const moonX = width * 0.5;
+          const moonY = height * 0.27;
+          const haloR = 62;
+          ctx.beginPath();
+          ctx.arc(moonX, moonY, haloR, 0, Math.PI * 2);
+          const halo = ctx.createRadialGradient(moonX, moonY, 10, moonX, moonY, haloR);
+          halo.addColorStop(0, "rgba(212, 193, 245, 0.06)");
+          halo.addColorStop(0.65, "rgba(192, 166, 239, 0.18)");
+          halo.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = halo;
+          ctx.fill();
+
+          const discX = moonX - 80 + eclipse * 160;
+          ctx.beginPath();
+          ctx.arc(discX, moonY, 44, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(8, 10, 20, 0.95)";
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(discX, moonY, 46, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(191, 168, 239, 0.35)";
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+        }
       }
 
       if (scene === 6) {
-        wavePulseRef.current = Math.max(wavePulseRef.current - 0.013, 0);
+        shimmerRef.current = Math.max(0, shimmerRef.current - 0.016);
+        wavePulseRef.current = Math.max(0, wavePulseRef.current - 0.013);
         if (wavePulseRef.current > 0) {
-          drawConstellationPath(1, `rgba(251, 233, 198, ${0.74 + wavePulseRef.current * 0.2})`, 2.4 + wavePulseRef.current * 1.8);
+          drawPath(heartPoints, 1, `rgba(244, 224, 189, ${0.72 + wavePulseRef.current * 0.2})`, 2.2 + wavePulseRef.current * 1.8);
         }
+      }
+
+      // Film grain overlay
+      if (grainPatternRef.current) {
+        ctx.save();
+        ctx.globalAlpha = lowPower ? 0.06 : 0.09;
+        ctx.fillStyle = grainPatternRef.current;
+        ctx.translate((time * 0.03) % 128, (time * 0.04) % 128);
+        ctx.fillRect(-128, -128, width + 256, height + 256);
+        ctx.restore();
       }
 
       raf = requestAnimationFrame(animate);
@@ -332,7 +443,7 @@ export function ValentineExperience() {
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [goToScene, lowPower, reducedMotion, ringLen, scene, stars]);
+  }, [dust, lowPower, reducedMotion, ringLength, scene, setSceneWithTime, stars]);
 
   const activateCenter = (event: React.PointerEvent<HTMLButtonElement>) => {
     updateDebug("pointerdown", event.pointerType, "center-glow", false);
@@ -344,27 +455,21 @@ export function ValentineExperience() {
     holdPointerIdRef.current = event.pointerId;
     holdStartAtRef.current = performance.now();
     button.setPointerCapture(event.pointerId);
-    if (ringProgressRef.current) {
-      ringProgressRef.current.style.strokeDashoffset = `${ringLen}`;
-    }
+    if (ringProgressRef.current) ringProgressRef.current.style.strokeDashoffset = `${ringLength}`;
     updateDebug("pointerdown", event.pointerType, "hold-make-ours", button.hasPointerCapture(event.pointerId));
   };
 
-  const cancelHold = (event: React.PointerEvent<HTMLButtonElement>, type: "pointerup" | "pointercancel" | "pointermove") => {
+  const stopHold = (event: React.PointerEvent<HTMLButtonElement>, reason: "pointerup" | "pointercancel" | "pointermove") => {
     const id = holdPointerIdRef.current;
     if (id === null || event.pointerId !== id) return;
 
     const button = event.currentTarget;
-    if (button.hasPointerCapture(id)) {
-      button.releasePointerCapture(id);
-    }
+    if (button.hasPointerCapture(id)) button.releasePointerCapture(id);
 
     holdPointerIdRef.current = null;
     holdStartAtRef.current = null;
-    if (ringProgressRef.current) {
-      ringProgressRef.current.style.strokeDashoffset = `${ringLen}`;
-    }
-    updateDebug(type, event.pointerType, "hold-make-ours", false);
+    if (ringProgressRef.current) ringProgressRef.current.style.strokeDashoffset = `${ringLength}`;
+    updateDebug(reason, event.pointerType, "hold-make-ours", false);
   };
 
   const onHoldMove = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -374,10 +479,7 @@ export function ValentineExperience() {
     const rect = event.currentTarget.getBoundingClientRect();
     const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
     updateDebug("pointermove", event.pointerType, "hold-make-ours", event.currentTarget.hasPointerCapture(id));
-
-    if (!inside) {
-      cancelHold(event, "pointermove");
-    }
+    if (!inside) stopHold(event, "pointermove");
   };
 
   return (
@@ -406,8 +508,8 @@ export function ValentineExperience() {
             {scene === 3 && (
               <>
                 <div className={styles.memoryStack}>
-                  {MEMORY_LINES.map((line, idx) => (
-                    <p key={line} className={`${styles.memoryLine} ${memoryVisibleCount > idx ? styles.memoryVisible : ""}`}>{line}</p>
+                  {MEMORY_LINES.map((line, index) => (
+                    <p key={line} className={`${styles.memoryLine} ${memoryVisibleCount > index ? styles.memoryVisible : ""}`}>{line}</p>
                   ))}
                 </div>
                 <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-3-next")}>Continue</button>
@@ -434,12 +536,12 @@ export function ValentineExperience() {
                   className={`${styles.holdButton} tap`}
                   onPointerDown={startHold}
                   onPointerMove={onHoldMove}
-                  onPointerUp={(e) => cancelHold(e, "pointerup")}
-                  onPointerCancel={(e) => cancelHold(e, "pointercancel")}
+                  onPointerUp={(e) => stopHold(e, "pointerup")}
+                  onPointerCancel={(e) => stopHold(e, "pointercancel")}
                 >
                   <svg viewBox="0 0 56 56" className={styles.ring}>
                     <circle cx="28" cy="28" r="22" className={styles.ringTrack} />
-                    <circle ref={ringProgressRef} cx="28" cy="28" r="22" className={styles.ringProgress} style={{ strokeDasharray: ringLen, strokeDashoffset: ringLen }} />
+                    <circle ref={ringProgressRef} cx="28" cy="28" r="22" className={styles.ringProgress} style={{ strokeDasharray: ringLength, strokeDashoffset: ringLength }} />
                   </svg>
                   <span>Hold</span>
                 </button>
@@ -455,6 +557,7 @@ export function ValentineExperience() {
                   <p className={styles.promiseLine}>Today.</p>
                   <p className={styles.promiseLine}>Tomorrow.</p>
                   <p className={styles.promiseLine}>Every day.</p>
+                  <p className={styles.whisper}>I was always yours.</p>
                 </div>
                 <button type="button" className={`${styles.replay} tap`} onPointerDown={replay}>Begin again</button>
               </>
@@ -471,7 +574,7 @@ export function ValentineExperience() {
                   <p><strong>target:</strong> {debug.target}</p>
                   <p><strong>capture:</strong> {debug.capture ? "active" : "inactive"}</p>
                   <p><strong>scene:</strong> {scene}</p>
-                  <p><strong>light:</strong> {centerActivated ? "active" : "idle"}</p>
+                  <p><strong>center:</strong> {centerActivated ? "lit" : "idle"}</p>
                 </div>
               )}
             </aside>
@@ -501,8 +604,7 @@ function useLowPowerMode() {
 
   useEffect(() => {
     if (typeof navigator === "undefined") return;
-    const cores = navigator.hardwareConcurrency || 4;
-    setLowPower(cores <= 4);
+    setLowPower((navigator.hardwareConcurrency || 4) <= 4);
   }, []);
 
   return lowPower;
