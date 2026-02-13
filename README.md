@@ -76,6 +76,16 @@ Deploy the `out/` directory to your Pages branch.
    - Project license: MIT (Three.js repository).
    - Used with graceful fallback to generated procedural noise if unavailable.
 
+3. **Lens flare texture** (romantic halo overlay):
+   - Three.js example lensflare texture:
+     <https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/lensflare/lensflare0.png>
+   - Project license: MIT (Three.js repository).
+
+4. **Romantic quote source**:
+   - Quotable API (love-tag lines): <https://api.quotable.io/>
+   - License: Open source project (MIT) and API terms apply.
+   - App includes local fallback lines if request fails.
+
 ## Optional self-hosting
 
 If you want zero runtime dependency on remote texture/font delivery:

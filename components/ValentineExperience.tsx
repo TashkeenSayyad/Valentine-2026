@@ -34,6 +34,7 @@ export function ValentineExperience() {
   const wheelLockRef = useRef(false);
   const sceneTransitionLockRef = useRef(false);
   const grainPatternRef = useRef<CanvasPattern | null>(null);
+  const haloPatternRef = useRef<CanvasPattern | null>(null);
   const heartBurstsRef = useRef<HeartBurst[]>([]);
 
   const ringLength = 2 * Math.PI * 22;
@@ -49,6 +50,8 @@ export function ValentineExperience() {
   const [displayScene, setDisplayScene] = useState<Scene>(1);
   const [sceneTransition, setSceneTransition] = useState<"in" | "out">("in");
   const [isHolding, setIsHolding] = useState(false);
+  const [romanticLine, setRomanticLine] = useState("I love the way the universe softens when you are near.");
+  const [quoteLoading, setQuoteLoading] = useState(false);
 
   const reducedMotion = useReducedMotion();
   const lowPower = useLowPowerMode();
@@ -112,6 +115,27 @@ export function ValentineExperience() {
     }, reducedMotion ? 80 : 220);
   }, [displayScene, reducedMotion, updateDebug]);
 
+
+
+  const refreshRomanticLine = useCallback(async () => {
+    if (quoteLoading) return;
+    setQuoteLoading(true);
+    try {
+      const response = await fetch("https://api.quotable.io/random?tags=love&maxLength=110", { cache: "no-store" });
+      if (!response.ok) throw new Error("quote-fetch-failed");
+      const payload = await response.json() as { content?: string };
+      if (payload.content) setRomanticLine(payload.content);
+    } catch {
+      const fallback = [
+        "You are the gentlest part of every day I live.",
+        "Even silence becomes beautiful when it is with you.",
+        "My favorite place in this world is still next to you."
+      ];
+      setRomanticLine(fallback[Math.floor(Math.random() * fallback.length)]);
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, [quoteLoading]);
   const replay = useCallback((event?: React.PointerEvent<HTMLButtonElement>) => {
     if (event) updateDebug("pointerdown", event.pointerType, "begin-again", false);
     setSceneWithTime(1);
@@ -151,7 +175,8 @@ export function ValentineExperience() {
 
   useEffect(() => {
     setHeartPrompt(displayScene >= 4 && displayScene < 6);
-  }, [displayScene]);
+    if (displayScene === 5) void refreshRomanticLine();
+  }, [displayScene, refreshRomanticLine]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -217,6 +242,15 @@ export function ValentineExperience() {
       setAssetReady(true);
     };
     texture.onerror = createFallbackPattern;
+
+    const halo = new Image();
+    halo.crossOrigin = "anonymous";
+    halo.src = "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/lensflare/lensflare0.png";
+    halo.onload = () => {
+      const main = canvas.getContext("2d");
+      if (!main) return;
+      haloPatternRef.current = main.createPattern(halo, "repeat");
+    };
 
     createFallbackPattern();
   }, []);
@@ -448,6 +482,16 @@ export function ValentineExperience() {
         });
       }
 
+      // romantic halo mist from online texture
+      if (haloPatternRef.current && displayScene >= 4) {
+        ctx.save();
+        ctx.globalAlpha = reducedMotion ? 0.06 : 0.1;
+        ctx.fillStyle = haloPatternRef.current;
+        ctx.translate((time * 0.01) % 256, (time * 0.008) % 256);
+        ctx.fillRect(-256, -256, width + 512, height + 512);
+        ctx.restore();
+      }
+
       // Film grain overlay
       if (grainPatternRef.current) {
         ctx.save();
@@ -597,6 +641,10 @@ export function ValentineExperience() {
               <>
                 <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
                 <p className={styles.holdLabel}>Hold to make it ours.</p>
+                <p className={styles.romanticLine}>“{romanticLine}”</p>
+                <button type="button" className={`${styles.quoteRefresh} tap`} onPointerDown={() => { void refreshRomanticLine(); }}>
+                  {quoteLoading ? "Listening to the stars…" : "Another whisper"}
+                </button>
                 {heartPrompt && <p className={styles.skyHint}>Tap the sky to release hearts.</p>}
                 <button
                   ref={holdButtonRef}
