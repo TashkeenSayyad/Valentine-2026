@@ -257,22 +257,37 @@
 
 .holdButton {
   transition: transform 260ms ease, box-shadow 260ms ease, filter 260ms ease;
-  width: 106px;
-  height: 106px;
+  width: 136px;
+  height: 136px;
   border: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 36% 31%, #f4f0ff, #c6b8f0 77%);
+  border-radius: 46% 54% 48% 52% / 54% 44% 56% 46%;
+  background: radial-gradient(circle at 36% 28%, #fff6ff, #e8c7f3 42%, #c7b6f4 100%);
   color: #2f2746;
   font-weight: 600;
   letter-spacing: 0.05em;
   position: relative;
+  box-shadow: 0 10px 34px rgba(146, 120, 220, 0.34), 0 0 48px rgba(238, 176, 212, 0.22);
 }
 
 
 .holding {
-  transform: scale(0.985);
-  box-shadow: 0 0 28px rgba(188, 170, 255, 0.45), 0 0 86px rgba(199, 176, 255, 0.22);
-  filter: saturate(1.08);
+  transform: scale(0.975);
+  box-shadow: 0 0 36px rgba(210, 173, 243, 0.58), 0 0 98px rgba(199, 176, 255, 0.32);
+  filter: saturate(1.12);
+}
+
+.holdButtonInner {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-size: 0.92rem;
+  line-height: 1.1;
+}
+
+.holdHeart {
+  font-size: 2rem;
+  color: #ba4f8c;
+  text-shadow: 0 0 14px rgba(255, 164, 214, 0.5);
 }
 
 .ring {
@@ -390,6 +405,40 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@media (max-width: 430px) {
+  .viewport {
+    padding: max(16px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+  }
+
+  .content {
+    gap: 18px;
+  }
+
+  .question {
+    font-size: clamp(2.2rem, 9.4vw, 3rem);
+    line-height: 1.12;
+  }
+
+  .holdButton {
+    width: 154px;
+    height: 154px;
+    box-shadow: 0 16px 40px rgba(149, 110, 215, 0.38), 0 0 68px rgba(239, 176, 217, 0.34);
+  }
+
+  .holdHeart {
+    font-size: 2.25rem;
+  }
+
+  .holdLabel {
+    letter-spacing: 0.14em;
+  }
+
+  .romanticLine {
+    max-width: 28ch;
+    font-size: 1rem;
   }
 }
 
