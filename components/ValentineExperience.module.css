@@ -196,8 +196,7 @@
 .centerLight,
 .holdButton,
 .replay,
-.debugToggle,
-.heartAction {
+.debugToggle {
   pointer-events: auto;
   touch-action: manipulation;
   min-height: 44px;
@@ -216,18 +215,6 @@
 
 
 
-.heartAction {
-  border: 1px solid rgba(240, 226, 255, 0.42);
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(246, 233, 255, 0.16), rgba(194, 166, 240, 0.2));
-  color: rgba(247, 239, 255, 0.95);
-  font-weight: 500;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  font-size: 0.68rem;
-  padding: 9px 16px;
-  backdrop-filter: blur(7px);
-}
 
 .centerLight {
   width: 92px;

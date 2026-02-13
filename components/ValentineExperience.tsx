@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ValentineExperience.module.css";
-import { anushaTracePath, heartConstellation, randomStarsSeed } from "@/lib/constellation";
+import { heartConstellation, randomStarsSeed } from "@/lib/constellation";
 
 type Scene = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -310,7 +310,6 @@ export function ValentineExperience() {
       const holdingNow = holdStartAtRef.current !== null;
       const heartbeat = holdingNow && !reducedMotion ? 0.5 + Math.sin(time * 0.0063) * 0.5 : 0;
       const heartPoints = heartConstellation.map((p) => ({ x: p.x * width, y: p.y * height }));
-      const namePoints = anushaTracePath.map((p) => ({ x: p.x * width, y: p.y * height }));
 
       updateHoldRing(time);
       ctx.clearRect(0, 0, width, height);
@@ -380,22 +379,6 @@ export function ValentineExperience() {
       // Scene-specific dramatic elements
       if (scene >= 4) {
         const reveal = reducedMotion ? 1 : Math.min(sceneAge * 0.42, 1);
-        const nameReveal = Math.min(Math.max((sceneAge - 0.6) / 2.2, 0), 1);
-
-        // name handwriting trace
-        drawPath(namePoints, nameReveal, "rgba(231, 220, 250, 0.65)", 1.5);
-        if (nameReveal > 0 && nameReveal < 1) {
-          const idx = Math.min(Math.floor(nameReveal * (namePoints.length - 1)), namePoints.length - 1);
-          const p = namePoints[idx];
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 4.2, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(246, 234, 210, 0.92)";
-          ctx.shadowBlur = 14;
-          ctx.shadowColor = "rgba(233, 204, 152, 0.58)";
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-
         drawPath(heartPoints, reveal, `rgba(239, 227, 248, ${0.86 + heartbeat * 0.12})`, lowPower ? 1.4 : 1.9);
 
         // Eclipse reveal event
@@ -576,12 +559,6 @@ export function ValentineExperience() {
                 <p className={`${styles.textSecondary} ${styles.blurInDelay}`}>…everything feels right.</p>
                 <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
                 <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-4-next")}>Continue</button>
-                <button type="button" className={`${styles.heartAction} tap`} onPointerDown={(e) => {
-                  const r = (e.currentTarget.closest("div") as HTMLElement)?.getBoundingClientRect();
-                  const x = r ? r.width * 0.5 : 180;
-                  const y = r ? r.height * 0.58 : 420;
-                  createHeartBurst(x, y, e.pointerType);
-                }}>Send a little heart</button>
               </>
             )}
 
