@@ -31,13 +31,32 @@ npm run start
 
 ### Netlify
 
-- Build command: `npm run build`
-- Publish directory: `out`
+This project uses static export (`output: "export"` in `next.config.mjs`).
+
+1. Connect repo to Netlify.
+2. Build command:
+   ```bash
+   npm run build
+   ```
+3. Publish directory:
+   ```
+   docs
+   ```
+4. Deploy.
 
 ### GitHub Pages
 
+1. Build static output:
+   ```bash
+   npm run build
+   ```
+2. Deploy the `docs/` directory to your Pages branch (`gh-pages`) with your preferred tool.
+
+Example with `gh-pages` package:
+
 ```bash
-npm run build
+npm install --save-dev gh-pages
+npx gh-pages -d docs
 ```
 
 Deploy the `out/` directory to your Pages branch.
