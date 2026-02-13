@@ -14,5 +14,4 @@ export const heartConstellation: Vec2[] = [
   { x: 0.5, y: 0.69 }
 ];
 
-
 export const randomStarsSeed = 220;
