@@ -1,6 +1,7 @@
 node_modules
 .next
 out
+docs
 coverage
 .DS_Store
 *.log
