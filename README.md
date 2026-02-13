@@ -31,35 +31,21 @@ npm run start
 
 ### Netlify
 
-This project uses static export (`output: "export"` in `next.config.mjs`).
-
-1. Connect repo to Netlify.
-2. Build command:
-   ```bash
-   npm run build
-   ```
-3. Publish directory:
-   ```
-   docs
-   ```
-4. Deploy.
+- Build command: `npm run build`
+- Publish directory: `out`
 
 ### GitHub Pages
 
-1. Build static output:
-   ```bash
-   npm run build
-   ```
-2. Deploy the `docs/` directory to your Pages branch (`gh-pages`) with your preferred tool.
+Use the included workflow (`.github/workflows/pages.yml`) for reliable deploys.
 
-Example with `gh-pages` package:
+1. In GitHub: **Settings → Pages → Build and deployment**
+2. Set **Source** to **GitHub Actions**
+3. Push to your branch (or run the workflow manually)
 
-```bash
-npm install --save-dev gh-pages
-npx gh-pages -d docs
-```
+The workflow builds with `next export`, uploads `out/`, and deploys it.
+It also writes `out/.nojekyll` so Next.js `_next/*` assets are served correctly.
 
-Deploy the `out/` directory to your Pages branch.
+> If you only see your README on Pages, your repo is likely publishing from the wrong source (for example root/docs instead of the built `out/` artifact). Switch Pages source to **GitHub Actions**.
 
 ## Performance notes
 
