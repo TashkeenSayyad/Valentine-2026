@@ -11,7 +11,7 @@ type Dust = { x: number; y: number; depth: number; speed: number; angle: number;
 type DebugInfo = { event: string; pointerType: string; target: string; capture: boolean };
 type HeartBurst = { x: number; y: number; born: number; size: number; drift: number };
 
-const HOLD_DURATION_MS = 1500;
+const HOLD_DURATION_MS = 1000;
 const MEMORY_LINES = [
   "The first time you smiled at me, something in me settled.",
   "The way you say my name feels like a promise.",
@@ -52,8 +52,6 @@ export function ValentineExperience() {
   const [sceneTransition, setSceneTransition] = useState<"in" | "out">("in");
   const [isHolding, setIsHolding] = useState(false);
   const [romanticLine, setRomanticLine] = useState("I love the way the universe softens when you are near.");
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioGainRef = useRef<GainNode | null>(null);
 
   const reducedMotion = useReducedMotion();
   const lowPower = useLowPowerMode();
@@ -155,71 +153,6 @@ export function ValentineExperience() {
     if (typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname)) {
       setDebugEnabled(true);
     }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const startAmbientAudio = () => {
-      if (!audioContextRef.current) {
-        const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (!AudioCtx) return;
-
-        const ctx = new AudioCtx();
-        const gain = ctx.createGain();
-        gain.gain.value = 0.009;
-
-        const main = ctx.createOscillator();
-        main.type = "sine";
-        main.frequency.value = 174;
-
-        const harmony = ctx.createOscillator();
-        harmony.type = "triangle";
-        harmony.frequency.value = 261.63;
-
-        const slowPulse = ctx.createOscillator();
-        slowPulse.type = "sine";
-        slowPulse.frequency.value = 0.075;
-
-        const pulseGain = ctx.createGain();
-        pulseGain.gain.value = 0.0016;
-
-        slowPulse.connect(pulseGain);
-        pulseGain.connect(gain.gain);
-
-        main.connect(gain);
-        harmony.connect(gain);
-        gain.connect(ctx.destination);
-
-        main.start();
-        harmony.start();
-        slowPulse.start();
-
-        audioContextRef.current = ctx;
-        audioGainRef.current = gain;
-      }
-
-      const ctx = audioContextRef.current;
-      if (ctx && ctx.state === "suspended") {
-        void ctx.resume();
-      }
-    };
-
-    window.addEventListener("pointerdown", startAmbientAudio, { passive: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", startAmbientAudio);
-      const gain = audioGainRef.current;
-      const ctx = audioContextRef.current;
-      if (gain && ctx) {
-        gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.8);
-        window.setTimeout(() => {
-          void ctx.close();
-        }, 1000);
-      }
-      audioGainRef.current = null;
-      audioContextRef.current = null;
-    };
   }, []);
 
   useEffect(() => {
