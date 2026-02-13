@@ -1,29 +1,39 @@
-# Valentine-2026 · Constellation Reveal Microsite
+# Valentine-2026 · You Are My Universe
 
 A cinematic, mobile-first Valentine microsite built with **Next.js App Router + TypeScript**.
 
-## Experience highlights
+## Experience
 
-- Fullscreen procedural night sky rendered in Canvas 2D (no image assets).
-- Guided star-tap sequence with magnetic snapping + pulse feedback.
-- Animated constellation reveal into a luminous heart.
-- Post-reveal ask state:
-  - **Yes** = press and hold a bright star for ~1.5 seconds with smooth ring progress.
-  - **No** = swipe the question text away to elegantly reset with: “Let’s try that again.”
-- Confirmation scene with an elegant date card:
-  - When: ______
-  - Where: ______
-  - Note: ______
-- Replay flow.
-- Respect for `prefers-reduced-motion`.
-- Safe-area + dynamic viewport support with `100svh/100dvh`.
+A 4-scene interactive short film:
+
+1. **Silence** — deep night ambience + opening line
+2. **Light** — one central star awakens the sky
+3. **Constellation** — abstract heart constellation draws in
+4. **The Question** — hold-to-answer interaction
+
+Final state: **Always.** / **I choose you. Every day.**
+
+## Input reliability (cross-device)
+
+- Pointer Events for all critical interactions (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`)
+- Pointer capture for hold-to-answer (`setPointerCapture` / `releasePointerCapture`)
+- Real `<button>` tap targets (no div buttons)
+- Canvas background is non-interactive (`pointer-events: none`)
+- iOS-friendly tap behavior:
+  - `touch-action: manipulation`
+  - `-webkit-tap-highlight-color: transparent`
+- Dev-only **Input Debug** panel (localhost/dev) with:
+  - last event type
+  - pointer type
+  - target label
+  - pointer-capture state
 
 ## Stack
 
 - Next.js 14 (App Router)
 - React 18 + TypeScript
 - CSS Modules
-- Canvas 2D animation
+- Canvas 2D procedural rendering
 
 ## Run locally
 
@@ -47,38 +57,13 @@ npm run start
 
 This project uses static export (`output: "export"` in `next.config.mjs`).
 
-1. Connect repo to Netlify.
-2. Build command:
-   ```bash
-   npm run build
-   ```
-3. Publish directory:
-   ```
-   out
-   ```
-4. Deploy.
+- Build command: `npm run build`
+- Publish directory: `out`
 
 ### GitHub Pages
 
-1. Build static output:
-   ```bash
-   npm run build
-   ```
-2. Deploy the `out/` directory to your Pages branch (`gh-pages`) with your preferred tool.
-
-Example with `gh-pages` package:
-
 ```bash
-npm install --save-dev gh-pages
-npx gh-pages -d out
+npm run build
 ```
 
-Then configure repository Pages source to the published branch.
-
-## Notes
-
-- Designed mobile-first and tuned for ~390px width.
-- No external image assets; all stars/lines/glows are procedural.
-
-- Robust cross-device pointer input handling (mouse/touch/trackpad) with pointer capture for hold interaction.
-- Dev-only **Input Debug** panel to inspect event type, pointerType, target, and capture state.
+Deploy the `out/` directory to your Pages branch (for example with `gh-pages`).
