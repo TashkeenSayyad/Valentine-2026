@@ -1,0 +1,408 @@
+.shell {
+  min-height: 100dvh;
+  min-height: 100svh;
+  color: #f5f1ff;
+  background: radial-gradient(circle at 18% 10%, rgba(101, 92, 156, 0.17), transparent 44%),
+    linear-gradient(170deg, #060914, #030409 72%);
+  transition: background 1200ms ease;
+}
+
+.shell.warm {
+  background: radial-gradient(circle at 20% 12%, rgba(122, 112, 183, 0.23), transparent 45%),
+    radial-gradient(circle at 76% 16%, rgba(183, 158, 120, 0.13), transparent 40%),
+    linear-gradient(170deg, #0d1020, #070810 72%);
+}
+
+.shell.finalGlow {
+  background: radial-gradient(circle at 20% 14%, rgba(143, 129, 205, 0.26), transparent 45%),
+    radial-gradient(circle at 78% 18%, rgba(213, 183, 142, 0.18), transparent 36%),
+    linear-gradient(170deg, #18152f, #090a16 70%);
+}
+
+.viewport {
+  position: relative;
+  min-height: 100dvh;
+  min-height: 100svh;
+  overflow: hidden;
+  padding: max(24px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.overlay {
+  position: relative;
+  z-index: 2;
+  min-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - max(24px, env(safe-area-inset-bottom)));
+  pointer-events: none;
+}
+
+.content {
+  min-height: inherit;
+  max-width: 700px;
+  margin: 0 auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 24px;
+}
+
+
+.sceneLayer {
+  transition: opacity 520ms ease, filter 520ms ease, transform 520ms ease;
+}
+
+.sceneIn {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+.sceneOut {
+  opacity: 0.08;
+  filter: blur(6px);
+  transform: translateY(4px);
+}
+
+.textPrimary,
+.textSecondary,
+.memoryLine,
+.promiseLine,
+.whisper {
+  margin: 0;
+  text-wrap: balance;
+}
+
+.textPrimary,
+.question,
+.always {
+  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.textSecondary,
+.memoryLine,
+.promiseLine,
+.holdLabel,
+.control,
+.replay,
+.whisper,
+.romanticLine {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.textPrimary {
+  font-size: clamp(1.6rem, 5.8vw, 2.8rem);
+  line-height: 1.28;
+  letter-spacing: 0.015em;
+  color: rgba(243, 238, 255, 0.95);
+}
+
+.textSecondary {
+  font-size: clamp(1.1rem, 3.9vw, 1.62rem);
+  line-height: 1.45;
+  max-width: 30ch;
+  color: rgba(227, 219, 246, 0.83);
+}
+
+.loading {
+  margin: -6px 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(214, 205, 238, 0.64);
+}
+
+.blurIn {
+  animation: blurIn 1400ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+
+.blurInDelay {
+  animation: blurIn 1400ms cubic-bezier(0.2, 0.75, 0.2, 1) 300ms both;
+}
+
+.memoryStack {
+  display: grid;
+  gap: 14px;
+  max-width: 56ch;
+}
+
+.memoryLine {
+  color: rgba(237, 231, 250, 0.43);
+  font-size: clamp(1.02rem, 3.5vw, 1.36rem);
+  line-height: 1.52;
+  filter: blur(5px);
+  transform: translateY(4px);
+  opacity: 0;
+  transition: opacity 900ms ease, filter 900ms ease, transform 900ms ease, color 900ms ease;
+}
+
+.memoryVisible {
+  color: rgba(241, 236, 255, 0.91);
+  filter: blur(0);
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.question {
+  margin: 0;
+  font-size: clamp(2.08rem, 6.9vw, 4.24rem);
+  line-height: 1.14;
+  letter-spacing: 0.01em;
+}
+
+.holdLabel {
+  margin: -6px 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(226, 218, 245, 0.8);
+  font-size: 0.72rem;
+}
+
+
+
+
+.romanticLine {
+  margin: -2px 0 0;
+  max-width: 34ch;
+  font-size: clamp(0.96rem, 3.2vw, 1.12rem);
+  line-height: 1.5;
+  color: rgba(239, 230, 253, 0.86);
+  text-wrap: pretty;
+}
+
+
+.skyHint {
+  margin: -2px 0 4px;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(235, 226, 252, 0.66);
+}
+
+.always {
+  margin: 0;
+  font-size: clamp(3.1rem, 10.5vw, 7rem);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  animation: liftIn 1200ms ease both;
+}
+
+.promiseStack {
+  display: grid;
+  gap: 8px;
+}
+
+.promiseLine {
+  color: rgba(240, 232, 252, 0.89);
+  font-size: clamp(1.05rem, 3.8vw, 1.46rem);
+  line-height: 1.42;
+  opacity: 0;
+  animation: promiseIn 1000ms ease forwards;
+}
+
+.promiseLine:nth-child(1) { animation-delay: 260ms; }
+.promiseLine:nth-child(2) { animation-delay: 520ms; }
+.promiseLine:nth-child(3) { animation-delay: 820ms; }
+.promiseLine:nth-child(4) { animation-delay: 1120ms; }
+.promiseLine:nth-child(5) { animation-delay: 1420ms; }
+
+.whisper {
+  margin-top: 10px;
+  font-size: 0.74rem;
+  letter-spacing: 0.07em;
+  color: rgba(228, 219, 247, 0.42);
+  opacity: 0;
+  animation: whisperIn 1500ms ease 1900ms forwards;
+}
+
+.control,
+.centerLight,
+.holdButton,
+.replay,
+.debugToggle {
+  pointer-events: auto;
+  touch-action: manipulation;
+  min-height: 44px;
+}
+
+.control {
+  border-radius: 999px;
+  border: 1px solid rgba(232, 223, 250, 0.24);
+  background: rgba(11, 12, 22, 0.5);
+  color: rgba(246, 241, 255, 0.95);
+  font-size: 0.69rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+}
+
+
+
+
+.centerLight {
+  width: 92px;
+  height: 92px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 33%, #fff8ea, #eed2b3 75%);
+  box-shadow: 0 0 34px rgba(240, 208, 168, 0.54), 0 0 100px rgba(165, 146, 223, 0.16);
+}
+
+.holdButton {
+  transition: transform 260ms ease, box-shadow 260ms ease, filter 260ms ease;
+  width: 106px;
+  height: 106px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 31%, #f4f0ff, #c6b8f0 77%);
+  color: #2f2746;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  position: relative;
+}
+
+
+.holding {
+  transform: scale(0.985);
+  box-shadow: 0 0 28px rgba(188, 170, 255, 0.45), 0 0 86px rgba(199, 176, 255, 0.22);
+  filter: saturate(1.08);
+}
+
+.ring {
+  position: absolute;
+  inset: -7px;
+  width: calc(100% + 14px);
+  height: calc(100% + 14px);
+  transform: rotate(-90deg);
+}
+
+.ringTrack,
+.ringProgress {
+  fill: none;
+  stroke-width: 2.8;
+}
+
+.ringTrack {
+  stroke: rgba(232, 223, 251, 0.35);
+}
+
+.ringProgress {
+  stroke: rgba(188, 170, 255, 0.96);
+  filter: drop-shadow(0 0 4px rgba(198, 176, 255, 0.55));
+  transition: stroke-dashoffset 24ms linear;
+}
+
+.replay {
+  border: 0;
+  background: transparent;
+  color: rgba(239, 231, 252, 0.95);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: 0.95rem;
+}
+
+.debugPanel {
+  pointer-events: auto;
+  position: absolute;
+  top: 8px;
+  right: 0;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.debugToggle {
+  border-radius: 999px;
+  border: 1px solid rgba(231, 223, 249, 0.28);
+  background: rgba(10, 11, 20, 0.65);
+  color: #f4f0ff;
+  font-size: 0.78rem;
+  padding: 8px 14px;
+}
+
+.debugBody {
+  pointer-events: auto;
+  width: min(290px, 84vw);
+  border-radius: 12px;
+  border: 1px solid rgba(231, 223, 249, 0.24);
+  background: rgba(8, 9, 17, 0.78);
+  color: rgba(243, 237, 255, 0.94);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  padding: 10px 12px;
+}
+
+.debugBody p {
+  margin: 2px 0;
+}
+
+.tap {
+  touch-action: manipulation;
+}
+
+@keyframes blurIn {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes liftIn {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes promiseIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes whisperIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell,
+  .ringProgress,
+  .textPrimary,
+  .textSecondary,
+  .memoryLine,
+  .promiseLine,
+  .always,
+  .whisper {
+    transition-duration: 0ms;
+    animation-duration: 1ms;
+  }
+}
