@@ -53,6 +53,23 @@
   gap: 24px;
 }
 
+
+.sceneLayer {
+  transition: opacity 520ms ease, filter 520ms ease, transform 520ms ease;
+}
+
+.sceneIn {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+.sceneOut {
+  opacity: 0.08;
+  filter: blur(6px);
+  transform: translateY(4px);
+}
+
 .textPrimary,
 .textSecondary,
 .memoryLine,
@@ -226,6 +243,7 @@
 }
 
 .holdButton {
+  transition: transform 260ms ease, box-shadow 260ms ease, filter 260ms ease;
   width: 106px;
   height: 106px;
   border: 0;
@@ -235,6 +253,13 @@
   font-weight: 600;
   letter-spacing: 0.05em;
   position: relative;
+}
+
+
+.holding {
+  transform: scale(0.985);
+  box-shadow: 0 0 28px rgba(188, 170, 255, 0.45), 0 0 86px rgba(199, 176, 255, 0.22);
+  filter: saturate(1.08);
 }
 
 .ring {

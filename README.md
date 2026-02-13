@@ -7,7 +7,7 @@ A cinematic single-page Valentine microsite (Next.js + TypeScript) designed as a
 1. **The Night** — stillness and scale
 2. **The Change** — central warmth entering the sky
 3. **The Moments** — three intimate memory lines
-4. **The Heart** — starlight handwriting + abstract heart + eclipse reveal
+4. **The Heart** — abstract heart constellation + eclipse reveal
 5. **The Promise** — hold interaction (“Hold to make it ours”)
 6. **Final State** — devotion lines and whisper: “I was always yours.”
 

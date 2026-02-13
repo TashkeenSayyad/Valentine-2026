@@ -32,6 +32,7 @@ export function ValentineExperience() {
   const shimmerRef = useRef(0);
   const beamFlashRef = useRef(0);
   const wheelLockRef = useRef(false);
+  const sceneTransitionLockRef = useRef(false);
   const grainPatternRef = useRef<CanvasPattern | null>(null);
   const heartBurstsRef = useRef<HeartBurst[]>([]);
 
@@ -45,6 +46,9 @@ export function ValentineExperience() {
   const [debugEnabled, setDebugEnabled] = useState(process.env.NODE_ENV !== "production");
   const [debug, setDebug] = useState<DebugInfo>({ event: "idle", pointerType: "-", target: "-", capture: false });
   const [heartPrompt, setHeartPrompt] = useState(false);
+  const [displayScene, setDisplayScene] = useState<Scene>(1);
+  const [sceneTransition, setSceneTransition] = useState<"in" | "out">("in");
+  const [isHolding, setIsHolding] = useState(false);
 
   const reducedMotion = useReducedMotion();
   const lowPower = useLowPowerMode();
@@ -86,17 +90,27 @@ export function ValentineExperience() {
 
   const setSceneWithTime = useCallback((next: Scene) => {
     setScene(next);
+    setDisplayScene(next);
+    setSceneTransition("in");
+    sceneTransitionLockRef.current = false;
     enteredSceneAtRef.current = performance.now();
   }, []);
 
   const nextScene = useCallback((pointerType: string, target: string) => {
-    setScene((prev) => {
-      const next = Math.min(prev + 1, 5) as Scene;
-      if (next !== prev) enteredSceneAtRef.current = performance.now();
-      updateDebug("advance", pointerType, target, false);
-      return next;
-    });
-  }, [updateDebug]);
+    if (sceneTransitionLockRef.current) return;
+    const next = Math.min(displayScene + 1, 5) as Scene;
+    if (next === displayScene) return;
+    sceneTransitionLockRef.current = true;
+    setSceneTransition("out");
+    updateDebug("advance", pointerType, target, false);
+    window.setTimeout(() => {
+      setScene(next);
+      setDisplayScene(next);
+      enteredSceneAtRef.current = performance.now();
+      setSceneTransition("in");
+      sceneTransitionLockRef.current = false;
+    }, reducedMotion ? 80 : 220);
+  }, [displayScene, reducedMotion, updateDebug]);
 
   const replay = useCallback((event?: React.PointerEvent<HTMLButtonElement>) => {
     if (event) updateDebug("pointerdown", event.pointerType, "begin-again", false);
@@ -105,6 +119,7 @@ export function ValentineExperience() {
     setMemoryVisibleCount(0);
     holdStartAtRef.current = null;
     holdPointerIdRef.current = null;
+    setIsHolding(false);
     wavePulseRef.current = 0;
     shimmerRef.current = 0;
     beamFlashRef.current = 0;
@@ -135,8 +150,8 @@ export function ValentineExperience() {
 
 
   useEffect(() => {
-    setHeartPrompt(scene >= 4 && scene < 6);
-  }, [scene]);
+    setHeartPrompt(displayScene >= 4 && displayScene < 6);
+  }, [displayScene]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -156,7 +171,7 @@ export function ValentineExperience() {
     const root = rootRef.current;
     if (!root) return;
     const onWheel = (event: WheelEvent) => {
-      if (scene >= 5 || Math.abs(event.deltaY) < 24 || wheelLockRef.current) return;
+      if (displayScene >= 5 || Math.abs(event.deltaY) < 24 || wheelLockRef.current) return;
       wheelLockRef.current = true;
       window.setTimeout(() => {
         wheelLockRef.current = false;
@@ -165,7 +180,7 @@ export function ValentineExperience() {
     };
     root.addEventListener("wheel", onWheel, { passive: true });
     return () => root.removeEventListener("wheel", onWheel);
-  }, [nextScene, scene]);
+  }, [displayScene, nextScene]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -271,6 +286,7 @@ export function ValentineExperience() {
       if (ratio >= 1) {
         holdStartAtRef.current = null;
         holdPointerIdRef.current = null;
+        setIsHolding(false);
         shimmerRef.current = 1;
         wavePulseRef.current = 1;
         window.setTimeout(() => {
@@ -410,7 +426,7 @@ export function ValentineExperience() {
         }
       }
 
-      if (scene === 6) {
+      if (displayScene === 6) {
         shimmerRef.current = Math.max(0, shimmerRef.current - 0.016);
         wavePulseRef.current = Math.max(0, wavePulseRef.current - 0.013);
         if (wavePulseRef.current > 0) {
@@ -442,6 +458,19 @@ export function ValentineExperience() {
         ctx.restore();
       }
 
+      // cinematic grade + vignette
+      const vignette = ctx.createRadialGradient(width * 0.5, height * 0.48, Math.min(width, height) * 0.2, width * 0.5, height * 0.5, Math.max(width, height) * 0.78);
+      vignette.addColorStop(0, "rgba(0,0,0,0)");
+      vignette.addColorStop(1, "rgba(3,3,8,0.34)");
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "soft-light";
+      ctx.fillStyle = `rgba(118, 88, 162, ${0.08 + heartbeat * 0.03})`;
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+
       raf = requestAnimationFrame(animate);
     };
 
@@ -454,7 +483,7 @@ export function ValentineExperience() {
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [dust, lowPower, reducedMotion, ringLength, scene, setSceneWithTime, stars]);
+  }, [displayScene, dust, lowPower, reducedMotion, ringLength, scene, setSceneWithTime, stars]);
 
 
   const createHeartBurst = (x: number, y: number, pointerType: string) => {
@@ -484,6 +513,7 @@ export function ValentineExperience() {
     const button = event.currentTarget;
     holdPointerIdRef.current = event.pointerId;
     holdStartAtRef.current = performance.now();
+    setIsHolding(true);
     button.setPointerCapture(event.pointerId);
     if (ringProgressRef.current) ringProgressRef.current.style.strokeDashoffset = `${ringLength}`;
     updateDebug("pointerdown", event.pointerType, "hold-make-ours", button.hasPointerCapture(event.pointerId));
@@ -498,6 +528,7 @@ export function ValentineExperience() {
 
     holdPointerIdRef.current = null;
     holdStartAtRef.current = null;
+    setIsHolding(false);
     if (ringProgressRef.current) ringProgressRef.current.style.strokeDashoffset = `${ringLength}`;
     updateDebug(reason, event.pointerType, "hold-make-ours", false);
   };
@@ -513,9 +544,9 @@ export function ValentineExperience() {
   };
 
   return (
-    <main className={`${styles.shell} ${scene >= 4 ? styles.warm : ""} ${scene >= 6 ? styles.finalGlow : ""}`}>
+    <main className={`${styles.shell} ${displayScene >= 4 ? styles.warm : ""} ${displayScene >= 6 ? styles.finalGlow : ""}`}>
       <div className={styles.viewport} ref={rootRef} onPointerDown={(e) => {
-        if (scene >= 4 && scene < 6) {
+        if (displayScene >= 4 && displayScene < 6) {
           const rect = e.currentTarget.getBoundingClientRect();
           createHeartBurst(e.clientX - rect.left, e.clientY - rect.top, e.pointerType);
         }
@@ -523,8 +554,8 @@ export function ValentineExperience() {
         <canvas ref={canvasRef} className={styles.canvas} aria-hidden />
 
         <div className={styles.overlay}>
-          <section className={styles.content}>
-            {scene === 1 && (
+          <section className={`${styles.content} ${styles.sceneLayer} ${sceneTransition === "out" ? styles.sceneOut : styles.sceneIn}`}>
+            {displayScene === 1 && (
               <>
                 <p className={`${styles.textPrimary} ${styles.blurIn}`}>Before you…</p>
                 <p className={`${styles.textSecondary} ${styles.blurInDelay}`}>…the world felt bigger.</p>
@@ -534,7 +565,7 @@ export function ValentineExperience() {
               </>
             )}
 
-            {scene === 2 && (
+            {displayScene === 2 && (
               <>
                 <button type="button" aria-label="Awaken the light" className={`${styles.centerLight} tap`} onPointerDown={activateCenter} />
                 <p className={`${styles.textPrimary} ${styles.blurIn}`}>Then I found my home.</p>
@@ -542,7 +573,7 @@ export function ValentineExperience() {
               </>
             )}
 
-            {scene === 3 && (
+            {displayScene === 3 && (
               <>
                 <div className={styles.memoryStack}>
                   {MEMORY_LINES.map((line, index) => (
@@ -553,7 +584,7 @@ export function ValentineExperience() {
               </>
             )}
 
-            {scene === 4 && (
+            {displayScene === 4 && (
               <>
                 <p className={`${styles.textPrimary} ${styles.blurIn}`}>With you…</p>
                 <p className={`${styles.textSecondary} ${styles.blurInDelay}`}>…everything feels right.</p>
@@ -562,7 +593,7 @@ export function ValentineExperience() {
               </>
             )}
 
-            {scene === 5 && (
+            {displayScene === 5 && (
               <>
                 <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
                 <p className={styles.holdLabel}>Hold to make it ours.</p>
@@ -571,7 +602,7 @@ export function ValentineExperience() {
                   ref={holdButtonRef}
                   type="button"
                   aria-label="Hold to make it ours"
-                  className={`${styles.holdButton} tap`}
+                  className={`${styles.holdButton} ${isHolding ? styles.holding : ""} tap`}
                   onPointerDown={startHold}
                   onPointerMove={onHoldMove}
                   onPointerUp={(e) => stopHold(e, "pointerup")}
@@ -586,7 +617,7 @@ export function ValentineExperience() {
               </>
             )}
 
-            {scene === 6 && (
+            {displayScene === 6 && (
               <>
                 <h2 className={styles.always}>Always.</h2>
                 <div className={styles.promiseStack}>
@@ -603,19 +634,13 @@ export function ValentineExperience() {
           </section>
 
           {debugEnabled && (
-            <aside className={styles.debugPanel}>
-              <button type="button" className={`${styles.debugToggle} tap`} onPointerDown={() => setShowDebug((prev) => !prev)}>Input Debug</button>
-              {showDebug && (
-                <div className={styles.debugBody}>
-                  <p><strong>event:</strong> {debug.event}</p>
-                  <p><strong>pointerType:</strong> {debug.pointerType}</p>
-                  <p><strong>target:</strong> {debug.target}</p>
-                  <p><strong>capture:</strong> {debug.capture ? "active" : "inactive"}</p>
-                  <p><strong>scene:</strong> {scene}</p>
-                  <p><strong>center:</strong> {centerActivated ? "lit" : "idle"}</p>
-                </div>
-              )}
-            </aside>
+            <DebugPanel
+              debug={debug}
+              scene={displayScene}
+              centerActivated={centerActivated}
+              showDebug={showDebug}
+              onToggle={() => setShowDebug((prev) => !prev)}
+            />
           )}
         </div>
       </div>
@@ -623,6 +648,32 @@ export function ValentineExperience() {
   );
 }
 
+
+type DebugPanelProps = {
+  debug: DebugInfo;
+  scene: Scene;
+  centerActivated: boolean;
+  showDebug: boolean;
+  onToggle: () => void;
+};
+
+function DebugPanel({ debug, scene, centerActivated, showDebug, onToggle }: DebugPanelProps) {
+  return (
+    <aside className={styles.debugPanel}>
+      <button type="button" className={`${styles.debugToggle} tap`} onPointerDown={onToggle}>Input Debug</button>
+      {showDebug && (
+        <div className={styles.debugBody}>
+          <p><strong>event:</strong> {debug.event}</p>
+          <p><strong>pointerType:</strong> {debug.pointerType}</p>
+          <p><strong>target:</strong> {debug.target}</p>
+          <p><strong>capture:</strong> {debug.capture ? "active" : "inactive"}</p>
+          <p><strong>scene:</strong> {scene}</p>
+          <p><strong>center:</strong> {centerActivated ? "lit" : "idle"}</p>
+        </div>
+      )}
+    </aside>
+  );
+}
 
 function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, fill: string) {
   ctx.save();
