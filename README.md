@@ -54,7 +54,7 @@ This project uses static export (`output: "export"` in `next.config.mjs`).
    ```
 3. Publish directory:
    ```
-   out
+   docs
    ```
 4. Deploy.
 
@@ -64,13 +64,13 @@ This project uses static export (`output: "export"` in `next.config.mjs`).
    ```bash
    npm run build
    ```
-2. Deploy the `out/` directory to your Pages branch (`gh-pages`) with your preferred tool.
+2. Deploy the `docs/` directory to your Pages branch (`gh-pages`) with your preferred tool.
 
 Example with `gh-pages` package:
 
 ```bash
 npm install --save-dev gh-pages
-npx gh-pages -d out
+npx gh-pages -d docs
 ```
 
 Then configure repository Pages source to the published branch.
