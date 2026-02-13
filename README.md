@@ -1,32 +1,34 @@
-# Valentine-2026 · You Are My Universe
+# Valentine-2026 · Where My Heart Rests
 
-A cinematic, mobile-first Valentine microsite built with **Next.js App Router + TypeScript**.
+A cinematic, single-page Valentine microsite built with **Next.js App Router + TypeScript**.
 
-## Experience
+## Experience structure
 
-A 4-scene interactive short film:
+Five narrative scenes + final state:
 
-1. **Silence** — deep night ambience + opening line
-2. **Light** — one central star awakens the sky
-3. **Constellation** — abstract heart constellation draws in
-4. **The Question** — hold-to-answer interaction
+1. **The Night** — silence, longing, deep midnight sky
+2. **The Change** — central warm light, stars drifting inward
+3. **The Moments** — three intimate lines revealed progressively
+4. **The Heart** — abstract constellation heart + confession
+5. **The Promise** — hold-to-answer interaction (1.5s)
+6. **Final affirmation** — “Always.” and devotion lines
 
-Final state: **Always.** / **I choose you. Every day.**
-
-## Input reliability (cross-device)
+## Input + device reliability
 
 - Pointer Events for all critical interactions (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`)
-- Pointer capture for hold-to-answer (`setPointerCapture` / `releasePointerCapture`)
-- Real `<button>` tap targets (no div buttons)
-- Canvas background is non-interactive (`pointer-events: none`)
-- iOS-friendly tap behavior:
-  - `touch-action: manipulation`
-  - `-webkit-tap-highlight-color: transparent`
-- Dev-only **Input Debug** panel (localhost/dev) with:
-  - last event type
-  - pointer type
-  - target label
-  - pointer-capture state
+- Press-and-hold uses pointer capture (`setPointerCapture` / `releasePointerCapture`)
+- Background canvas is non-interactive (`pointer-events: none`)
+- Real `<button>` controls with touch-friendly hit areas
+- `touch-action: manipulation` on interactive controls
+- `-webkit-tap-highlight-color: transparent` globally for buttons
+- Dev-mode **Input Debug** panel showing event, pointerType, target, and capture
+
+## Performance notes
+
+- Single animation loop (`requestAnimationFrame`) drives procedural rendering and hold progress
+- Device pixel ratio is clamped (`Math.min(devicePixelRatio, 2)`, lower on low-power mode)
+- Low-power mode heuristics reduce star density and cost on weaker devices
+- `prefers-reduced-motion` disables heavy movement and minimizes transitions
 
 ## Stack
 
@@ -66,4 +68,4 @@ This project uses static export (`output: "export"` in `next.config.mjs`).
 npm run build
 ```
 
-Deploy the `out/` directory to your Pages branch (for example with `gh-pages`).
+Deploy the `out/` directory to your Pages branch (e.g. with `gh-pages`).

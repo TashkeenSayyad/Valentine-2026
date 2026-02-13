@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ValentineExperience.module.css";
-import { heartConstellation, randomStarsSeed, type Vec2 } from "@/lib/constellation";
+import { heartConstellation, randomStarsSeed } from "@/lib/constellation";
 
-type Scene = 0 | 1 | 2 | 3 | 4;
+type Scene = 1 | 2 | 3 | 4 | 5 | 6;
 
 type Star = {
   x: number;
@@ -21,59 +21,69 @@ type DebugInfo = {
   capture: boolean;
 };
 
-const HOLD_MS = 1500;
+const HOLD_DURATION_MS = 1500;
+const MEMORY_LINES = [
+  "The first time you smiled at me, something in me settled.",
+  "The way you say my name feels like a promise.",
+  "In your quiet presence, my whole life breathes easier."
+];
 
 export function ValentineExperience() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const holdRef = useRef<HTMLButtonElement>(null);
-  const holdPointerId = useRef<number | null>(null);
-  const holdStart = useRef(0);
-  const sceneEnteredAt = useRef(0);
-  const wheelLock = useRef(false);
+  const holdButtonRef = useRef<HTMLButtonElement>(null);
+  const ringProgressRef = useRef<SVGCircleElement>(null);
+  const ringLen = 2 * Math.PI * 22;
 
-  const [scene, setScene] = useState<Scene>(0);
-  const [lightTriggered, setLightTriggered] = useState(false);
-  const [rippleAt, setRippleAt] = useState<number | null>(null);
-  const [holdProgress, setHoldProgress] = useState(0);
-  const [holding, setHolding] = useState(false);
+  const pointerOffsetRef = useRef({ x: 0, y: 0 });
+  const enteredSceneAtRef = useRef(0);
+  const holdPointerIdRef = useRef<number | null>(null);
+  const holdStartAtRef = useRef<number | null>(null);
   const wavePulseRef = useRef(0);
-  const [showDebug, setShowDebug] = useState(false);
+  const shimmerRef = useRef(0);
+  const beamFlashRef = useRef(0);
+  const wheelLockRef = useRef(false);
+
+  const [scene, setScene] = useState<Scene>(1);
+  const [centerActivated, setCenterActivated] = useState(false);
+  const [memoryVisibleCount, setMemoryVisibleCount] = useState(0);
   const [debugEnabled, setDebugEnabled] = useState(process.env.NODE_ENV !== "production");
+  const [showDebug, setShowDebug] = useState(false);
   const [debug, setDebug] = useState<DebugInfo>({ event: "idle", pointerType: "-", target: "-", capture: false });
 
   const reducedMotion = useReducedMotion();
-  const pointerOffset = useRef({ x: 0, y: 0 });
+  const lowPower = useLowPowerMode();
+
+  const starCount = lowPower ? Math.floor(randomStarsSeed * 0.62) : randomStarsSeed;
 
   const stars = useMemo<Star[]>(() => {
     const seeded = (seed: number) => {
       const value = Math.sin(seed) * 10000;
       return value - Math.floor(value);
     };
-
-    return Array.from({ length: randomStarsSeed }, (_, i) => ({
+    return Array.from({ length: starCount }, (_, i) => ({
       x: seeded(i * 31.77),
       y: seeded(i * 41.37),
-      r: 0.5 + seeded(i * 71.3) * 1.8,
-      depth: 0.4 + seeded(i * 15.9) * 1.2,
+      r: 0.45 + seeded(i * 71.3) * 1.7,
+      depth: 0.34 + seeded(i * 15.9) * 1.2,
       phase: seeded(i * 91.1) * Math.PI * 2
     }));
-  }, []);
-
-  const setSceneSafe = (next: Scene) => {
-    setScene(next);
-    sceneEnteredAt.current = performance.now();
-  };
+  }, [starCount]);
 
   const updateDebug = useCallback((event: string, pointerType: string, target: string, capture = false) => {
     setDebug({ event, pointerType, target, capture });
   }, []);
 
-  const advanceScene = useCallback((pointerType: string, target: string) => {
-    setScene((current) => {
-      const next = Math.min(current + 1, 3) as Scene;
-      if (next !== current) {
-        sceneEnteredAt.current = performance.now();
+  const goToScene = useCallback((next: Scene) => {
+    setScene(next);
+    enteredSceneAtRef.current = performance.now();
+  }, []);
+
+  const nextScene = useCallback((pointerType: string, target: string) => {
+    setScene((prev) => {
+      const next = Math.min(prev + 1, 5) as Scene;
+      if (next !== prev) {
+        enteredSceneAtRef.current = performance.now();
       }
       updateDebug("advance", pointerType, target, false);
       return next;
@@ -82,19 +92,22 @@ export function ValentineExperience() {
 
   const replay = useCallback((event?: React.PointerEvent<HTMLButtonElement>) => {
     if (event) {
-      updateDebug("pointerdown", event.pointerType, "replay", false);
+      updateDebug("pointerdown", event.pointerType, "begin-again", false);
     }
-    setSceneSafe(0);
-    setLightTriggered(false);
-    setRippleAt(null);
-    setHoldProgress(0);
-    setHolding(false);
+    goToScene(1);
+    setCenterActivated(false);
+    holdStartAtRef.current = null;
+    holdPointerIdRef.current = null;
     wavePulseRef.current = 0;
-    holdPointerId.current = null;
-  }, [updateDebug]);
+    shimmerRef.current = 0;
+    beamFlashRef.current = 0;
+    if (ringProgressRef.current) {
+      ringProgressRef.current.style.strokeDashoffset = `${ringLen}`;
+    }
+  }, [goToScene, ringLen, updateDebug]);
 
   useEffect(() => {
-    sceneEnteredAt.current = performance.now();
+    enteredSceneAtRef.current = performance.now();
     if (typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname)) {
       setDebugEnabled(true);
     }
@@ -106,7 +119,7 @@ export function ValentineExperience() {
 
     const onMove = (event: PointerEvent) => {
       const rect = root.getBoundingClientRect();
-      pointerOffset.current = {
+      pointerOffsetRef.current = {
         x: (event.clientX - rect.left) / rect.width - 0.5,
         y: (event.clientY - rect.top) / rect.height - 0.5
       };
@@ -121,171 +134,189 @@ export function ValentineExperience() {
     if (!root) return;
 
     const onWheel = (event: WheelEvent) => {
-      if (Math.abs(event.deltaY) < 25 || wheelLock.current || scene >= 3) return;
-      wheelLock.current = true;
+      if (scene >= 5 || Math.abs(event.deltaY) < 24 || wheelLockRef.current) return;
+      wheelLockRef.current = true;
       window.setTimeout(() => {
-        wheelLock.current = false;
-      }, 420);
-      advanceScene("wheel", "scene-scroll");
+        wheelLockRef.current = false;
+      }, 380);
+      nextScene("wheel", "scene-scroll");
     };
 
     root.addEventListener("wheel", onWheel, { passive: true });
     return () => root.removeEventListener("wheel", onWheel);
-  }, [advanceScene, scene]);
+  }, [nextScene, scene]);
+
 
   useEffect(() => {
-    if (!holding || scene !== 3) return;
+    if (scene !== 3) {
+      setMemoryVisibleCount(0);
+      return;
+    }
 
-    let frame = 0;
-    const tick = (now: number) => {
-      const ratio = Math.min((now - holdStart.current) / HOLD_MS, 1);
-      setHoldProgress(ratio);
-      if (ratio >= 1) {
-        setHolding(false);
-        setSceneSafe(4);
-        wavePulseRef.current = 1;
-        holdPointerId.current = null;
-        return;
-      }
-      frame = requestAnimationFrame(tick);
+    setMemoryVisibleCount(1);
+    const first = window.setTimeout(() => setMemoryVisibleCount(2), reducedMotion ? 380 : 1450);
+    const second = window.setTimeout(() => setMemoryVisibleCount(3), reducedMotion ? 760 : 2900);
+    return () => {
+      window.clearTimeout(first);
+      window.clearTimeout(second);
     };
-
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [holding, scene]);
+  }, [scene, reducedMotion]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const root = rootRef.current;
     if (!canvas || !root) return;
-    const ctx = canvas.getContext("2d");
+
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     let raf = 0;
-    let w = 0;
-    let h = 0;
+    let width = 0;
+    let height = 0;
 
     const resize = () => {
       const rect = root.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      w = rect.width;
-      h = rect.height;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
+      const dpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1.4 : 2);
+      width = rect.width;
+      height = rect.height;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    const drawPath = (points: Vec2[], progress: number, stroke: string, lineWidth: number) => {
+    const drawConstellationPath = (progress: number, stroke: string, lineWidth: number) => {
       if (progress <= 0) return;
-      const mapped = points.map((p) => ({ x: p.x * w, y: p.y * h }));
+      const points = heartConstellation.map((p) => ({ x: p.x * width, y: p.y * height }));
       let total = 0;
-      for (let i = 1; i < mapped.length; i += 1) {
-        total += Math.hypot(mapped[i].x - mapped[i - 1].x, mapped[i].y - mapped[i - 1].y);
+      for (let i = 1; i < points.length; i += 1) {
+        total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
       }
-      const targetLen = total * Math.min(progress, 1);
-      let drawn = 0;
 
+      const target = total * Math.min(progress, 1);
+      let drawn = 0;
       ctx.beginPath();
-      ctx.moveTo(mapped[0].x, mapped[0].y);
-      for (let i = 1; i < mapped.length; i += 1) {
-        const seg = Math.hypot(mapped[i].x - mapped[i - 1].x, mapped[i].y - mapped[i - 1].y);
-        if (drawn + seg <= targetLen) {
-          ctx.lineTo(mapped[i].x, mapped[i].y);
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i += 1) {
+        const seg = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+        if (drawn + seg <= target) {
+          ctx.lineTo(points[i].x, points[i].y);
           drawn += seg;
           continue;
         }
-        const remain = targetLen - drawn;
+        const remain = target - drawn;
         if (remain > 0) {
           const ratio = remain / seg;
           ctx.lineTo(
-            mapped[i - 1].x + (mapped[i].x - mapped[i - 1].x) * ratio,
-            mapped[i - 1].y + (mapped[i].y - mapped[i - 1].y) * ratio
+            points[i - 1].x + (points[i].x - points[i - 1].x) * ratio,
+            points[i - 1].y + (points[i].y - points[i - 1].y) * ratio
           );
         }
         break;
       }
-
       ctx.strokeStyle = stroke;
       ctx.lineWidth = lineWidth;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.shadowBlur = 18;
-      ctx.shadowColor = "rgba(189,170,255,0.5)";
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = "rgba(180,166,235,0.45)";
       ctx.stroke();
       ctx.shadowBlur = 0;
     };
 
+    const updateHoldProgressRing = (now: number) => {
+      const started = holdStartAtRef.current;
+      if (!started || !ringProgressRef.current) return;
+
+      const ratio = Math.min((now - started) / HOLD_DURATION_MS, 1);
+      ringProgressRef.current.style.strokeDashoffset = `${ringLen * (1 - ratio)}`;
+
+      if (ratio >= 1) {
+        holdStartAtRef.current = null;
+        holdPointerIdRef.current = null;
+        wavePulseRef.current = 1;
+        shimmerRef.current = 1;
+        beamFlashRef.current = 1;
+        goToScene(6);
+      }
+    };
+
     const animate = (time: number) => {
-      const px = reducedMotion ? 0 : pointerOffset.current.x;
-      const py = reducedMotion ? 0 : pointerOffset.current.y;
-      const sceneTime = (time - sceneEnteredAt.current) / 1000;
+      const sceneAge = (time - enteredSceneAtRef.current) / 1000;
+      const px = reducedMotion ? 0 : pointerOffsetRef.current.x;
+      const py = reducedMotion ? 0 : pointerOffsetRef.current.y;
 
-      ctx.clearRect(0, 0, w, h);
+      updateHoldProgressRing(time);
 
-      const revealFactor = Math.min(Math.max(scene + (lightTriggered ? 0.65 : 0), 0) / 4, 1);
+      ctx.clearRect(0, 0, width, height);
+
+      // Moonlight beams (subtle volumetric effect)
+      const beamMotion = reducedMotion ? 0 : time * 0.00005;
+      const beamAlpha = 0.08 + (scene >= 2 ? 0.035 : 0) + beamFlashRef.current * 0.08;
+      for (let i = 0; i < 3; i += 1) {
+        const angle = (-0.8 + i * 0.35) + beamMotion * (i + 1);
+        const x = width * (0.5 + Math.sin(angle) * 0.28);
+        const y = -height * 0.15;
+        const grad = ctx.createRadialGradient(x, y, 20, x, y, Math.max(width, height) * 1.12);
+        grad.addColorStop(0, `rgba(236, 227, 200, ${beamAlpha})`);
+        grad.addColorStop(0.2, `rgba(204, 195, 231, ${beamAlpha * 0.36})`);
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(width, height) * 1.16, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      beamFlashRef.current = Math.max(beamFlashRef.current - 0.016, 0);
+
+      const reveal = Math.min(scene / 4, 1);
+
       stars.forEach((star, i) => {
-        const twinkle = reducedMotion ? 0.88 : 0.68 + Math.sin(time * 0.0011 + star.phase) * 0.17;
-        const alpha = 0.06 + revealFactor * 0.46;
-        const sx = star.x * w + px * star.depth * 11;
-        const sy = star.y * h + py * star.depth * 8;
-        const gate = scene === 0 ? Math.max(0, sceneTime * 0.24 - i / stars.length) : 1;
+        const twinkle = reducedMotion ? 0.86 : 0.64 + Math.sin(time * 0.0012 + star.phase) * 0.16;
+        const gate = scene === 1 ? Math.max(0, sceneAge * 0.22 - i / stars.length) : 1;
         if (gate <= 0) return;
+
+        let sx = star.x * width + px * star.depth * 10;
+        let sy = star.y * height + py * star.depth * 7;
+
+        if (scene >= 2 && !reducedMotion) {
+          const cx = width * 0.5;
+          const cy = height * 0.42;
+          sx += (cx - sx) * 0.00045 * (Math.sin(time * 0.001 + i) + 1.4);
+          sy += (cy - sy) * 0.00045 * (Math.cos(time * 0.0012 + i) + 1.4);
+        }
+
+        const alpha = (0.14 + reveal * 0.4) * gate;
         ctx.beginPath();
         ctx.arc(sx, sy, star.r * twinkle, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(239,233,255,${alpha * gate})`;
+        ctx.fillStyle = `rgba(233, 228, 246, ${alpha})`;
         ctx.fill();
       });
 
-      if (scene >= 1) {
-        const cx = w * 0.5;
-        const cy = h * 0.44;
-        const bloom = lightTriggered ? 1 : Math.min(sceneTime * 0.65, 1);
-        ctx.beginPath();
-        ctx.arc(cx, cy, 3.2 + bloom * 2.8, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,238,220,0.96)";
-        ctx.shadowBlur = 25;
-        ctx.shadowColor = "rgba(255,225,185,0.72)";
-        ctx.fill();
-        ctx.shadowBlur = 0;
+      if (scene >= 4) {
+        const pathDraw = reducedMotion ? 1 : Math.min(sceneAge * 0.48, 1);
+        drawConstellationPath(pathDraw, "rgba(228, 218, 246, 0.92)", lowPower ? 1.45 : 1.8);
 
-        if (rippleAt) {
-          const rippleProgress = Math.min((time - rippleAt) / (reducedMotion ? 560 : 1100), 1);
-          if (rippleProgress < 1) {
-            ctx.beginPath();
-            ctx.arc(cx, cy, 20 + rippleProgress * 170, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(226,201,255,${0.44 - rippleProgress * 0.44})`;
-            ctx.lineWidth = 1.6;
-            ctx.stroke();
-          }
-        }
-      }
-
-      if (scene >= 2) {
-        const pathProgress = reducedMotion ? 1 : Math.min(sceneTime * 0.48, 1);
-        drawPath(heartConstellation, pathProgress, "rgba(231,214,255,0.9)", 2.1);
-      }
-
-      if (scene >= 3) {
-        const beat = reducedMotion ? 0.8 : 0.72 + Math.sin(time * 0.0022) * 0.08;
+        const pulse = reducedMotion ? 0.75 : 0.7 + Math.sin(time * 0.0022) * 0.08;
+        const shimmer = shimmerRef.current;
         heartConstellation.slice(0, -1).forEach((p) => {
-          const x = p.x * w;
-          const y = p.y * h;
+          const x = p.x * width;
+          const y = p.y * height;
           ctx.beginPath();
-          ctx.arc(x, y, 2.8 + beat, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255,234,240,0.9)";
-          ctx.shadowBlur = 12;
-          ctx.shadowColor = "rgba(237,182,210,0.5)";
+          ctx.arc(x, y, 2.7 + pulse + shimmer * 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(251, 244, 230, ${0.75 + shimmer * 0.2})`;
+          ctx.shadowBlur = 10 + shimmer * 5;
+          ctx.shadowColor = "rgba(224, 192, 144, 0.45)";
           ctx.fill();
         });
         ctx.shadowBlur = 0;
+        shimmerRef.current = Math.max(shimmerRef.current - 0.016, 0);
       }
 
-      if (scene === 4) {
-        wavePulseRef.current = Math.max(wavePulseRef.current - 0.015, 0);
+      if (scene === 6) {
+        wavePulseRef.current = Math.max(wavePulseRef.current - 0.013, 0);
         if (wavePulseRef.current > 0) {
-          drawPath(heartConstellation, 1, `rgba(255,236,246,${0.6 + wavePulseRef.current * 0.4})`, 2.8 + wavePulseRef.current * 1.8);
+          drawConstellationPath(1, `rgba(251, 233, 198, ${0.74 + wavePulseRef.current * 0.2})`, 2.4 + wavePulseRef.current * 1.8);
         }
       }
 
@@ -301,121 +332,146 @@ export function ValentineExperience() {
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [scene, stars, reducedMotion, lightTriggered, rippleAt]);
+  }, [goToScene, lowPower, reducedMotion, ringLen, scene, stars]);
 
-  const triggerLight = (event: React.PointerEvent<HTMLButtonElement>) => {
-    updateDebug("pointerdown", event.pointerType, "central-star", false);
-    setLightTriggered(true);
-    setRippleAt(performance.now());
+  const activateCenter = (event: React.PointerEvent<HTMLButtonElement>) => {
+    updateDebug("pointerdown", event.pointerType, "center-glow", false);
+    setCenterActivated(true);
   };
 
-  const onHoldDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+  const startHold = (event: React.PointerEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
-    holdPointerId.current = event.pointerId;
+    holdPointerIdRef.current = event.pointerId;
+    holdStartAtRef.current = performance.now();
     button.setPointerCapture(event.pointerId);
-    holdStart.current = performance.now();
-    setHoldProgress(0);
-    setHolding(true);
-    updateDebug("pointerdown", event.pointerType, "hold-answer", button.hasPointerCapture(event.pointerId));
+    if (ringProgressRef.current) {
+      ringProgressRef.current.style.strokeDashoffset = `${ringLen}`;
+    }
+    updateDebug("pointerdown", event.pointerType, "hold-make-ours", button.hasPointerCapture(event.pointerId));
   };
 
-  const endHold = (event: React.PointerEvent<HTMLButtonElement>, reason: "pointerup" | "pointercancel" | "pointermove") => {
-    const id = holdPointerId.current;
+  const cancelHold = (event: React.PointerEvent<HTMLButtonElement>, type: "pointerup" | "pointercancel" | "pointermove") => {
+    const id = holdPointerIdRef.current;
     if (id === null || event.pointerId !== id) return;
+
     const button = event.currentTarget;
     if (button.hasPointerCapture(id)) {
       button.releasePointerCapture(id);
     }
-    setHolding(false);
-    setHoldProgress(0);
-    holdPointerId.current = null;
-    updateDebug(reason, event.pointerType, "hold-answer", false);
+
+    holdPointerIdRef.current = null;
+    holdStartAtRef.current = null;
+    if (ringProgressRef.current) {
+      ringProgressRef.current.style.strokeDashoffset = `${ringLen}`;
+    }
+    updateDebug(type, event.pointerType, "hold-make-ours", false);
   };
 
   const onHoldMove = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const id = holdPointerId.current;
-    if (id === null || event.pointerId !== id || !holding) return;
+    const id = holdPointerIdRef.current;
+    if (id === null || event.pointerId !== id) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
-    updateDebug("pointermove", event.pointerType, "hold-answer", event.currentTarget.hasPointerCapture(id));
+    updateDebug("pointermove", event.pointerType, "hold-make-ours", event.currentTarget.hasPointerCapture(id));
+
     if (!inside) {
-      endHold(event, "pointermove");
+      cancelHold(event, "pointermove");
     }
   };
 
-  const ringOffset = 2 * Math.PI * 22 * (1 - holdProgress);
-
   return (
-    <main className={`${styles.shell} ${scene >= 3 ? styles.warmer : ""} ${scene === 4 ? styles.deepFinal : ""}`}>
+    <main className={`${styles.shell} ${scene >= 4 ? styles.warm : ""} ${scene >= 6 ? styles.finalGlow : ""}`}>
       <div className={styles.viewport} ref={rootRef}>
         <canvas ref={canvasRef} className={styles.canvas} aria-hidden />
 
-        <div className={styles.uiLayer}>
-          <section className={`${styles.content} ${styles[`scene${scene}`]}`}>
-            {scene === 0 && (
-              <>
-                <p className={styles.lineOne}>In a world full of noise…</p>
-                <button className={`${styles.progressButton} tap`} type="button" onPointerDown={(e) => advanceScene(e.pointerType, "scene-1-progress")}>Continue</button>
-              </>
-            )}
-
+        <div className={styles.overlay}>
+          <section className={styles.content}>
             {scene === 1 && (
               <>
-                <button type="button" aria-label="Reveal light" className={`${styles.centerStarButton} tap`} onPointerDown={triggerLight} />
-                <p className={styles.lineTwo}>You are my calm.</p>
-                <button className={`${styles.progressButton} tap`} type="button" onPointerDown={(e) => advanceScene(e.pointerType, "scene-2-progress")}>Continue</button>
+                <p className={`${styles.textPrimary} ${styles.blurIn}`}>Before you…</p>
+                <p className={`${styles.textSecondary} ${styles.blurInDelay}`}>…the world felt bigger.</p>
+                <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-1-next")}>Continue</button>
               </>
             )}
 
             {scene === 2 && (
               <>
-                <p className={styles.lineThree}>You are my favorite place to exist.</p>
-                <button className={`${styles.progressButton} tap`} type="button" onPointerDown={(e) => advanceScene(e.pointerType, "scene-3-progress")}>Continue</button>
+                <button type="button" aria-label="Awaken the light" className={`${styles.centerLight} tap`} onPointerDown={activateCenter} />
+                <p className={`${styles.textPrimary} ${styles.blurIn}`}>Then I found my home.</p>
+                <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-2-next")}>Continue</button>
               </>
             )}
 
             {scene === 3 && (
               <>
+                <div className={styles.memoryStack}>
+                  {MEMORY_LINES.map((line, idx) => (
+                    <p key={line} className={`${styles.memoryLine} ${memoryVisibleCount > idx ? styles.memoryVisible : ""}`}>{line}</p>
+                  ))}
+                </div>
+                <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-3-next")}>Continue</button>
+              </>
+            )}
+
+            {scene === 4 && (
+              <>
+                <p className={`${styles.textPrimary} ${styles.blurIn}`}>With you…</p>
+                <p className={`${styles.textSecondary} ${styles.blurInDelay}`}>…everything feels right.</p>
                 <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
-                <p className={styles.holdLabel}>Hold to answer.</p>
+                <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-4-next")}>Continue</button>
+              </>
+            )}
+
+            {scene === 5 && (
+              <>
+                <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
+                <p className={styles.holdLabel}>Hold to make it ours.</p>
                 <button
-                  ref={holdRef}
+                  ref={holdButtonRef}
                   type="button"
-                  aria-label="Hold to answer"
-                  className={`${styles.holdButton} ${holding ? styles.holding : ""} tap`}
-                  onPointerDown={onHoldDown}
+                  aria-label="Hold to make it ours"
+                  className={`${styles.holdButton} tap`}
+                  onPointerDown={startHold}
                   onPointerMove={onHoldMove}
-                  onPointerUp={(event) => endHold(event, "pointerup")}
-                  onPointerCancel={(event) => endHold(event, "pointercancel")}
+                  onPointerUp={(e) => cancelHold(e, "pointerup")}
+                  onPointerCancel={(e) => cancelHold(e, "pointercancel")}
                 >
                   <svg viewBox="0 0 56 56" className={styles.ring}>
                     <circle cx="28" cy="28" r="22" className={styles.ringTrack} />
-                    <circle cx="28" cy="28" r="22" className={styles.ringProgress} style={{ strokeDasharray: 2 * Math.PI * 22, strokeDashoffset: ringOffset }} />
+                    <circle ref={ringProgressRef} cx="28" cy="28" r="22" className={styles.ringProgress} style={{ strokeDasharray: ringLen, strokeDashoffset: ringLen }} />
                   </svg>
                   <span>Hold</span>
                 </button>
               </>
             )}
 
-            {scene === 4 && (
+            {scene === 6 && (
               <>
                 <h2 className={styles.always}>Always.</h2>
-                <p className={styles.finalCopy}>I choose you.<br />Every day.</p>
-                <button type="button" className={`${styles.replay} tap`} onPointerDown={replay}>Replay</button>
+                <div className={styles.promiseStack}>
+                  <p className={styles.promiseLine}>My heart rests with you.</p>
+                  <p className={styles.promiseLine}>I choose you.</p>
+                  <p className={styles.promiseLine}>Today.</p>
+                  <p className={styles.promiseLine}>Tomorrow.</p>
+                  <p className={styles.promiseLine}>Every day.</p>
+                </div>
+                <button type="button" className={`${styles.replay} tap`} onPointerDown={replay}>Begin again</button>
               </>
             )}
           </section>
 
           {debugEnabled && (
             <aside className={styles.debugPanel}>
-              <button type="button" className={`${styles.debugToggle} tap`} onPointerDown={() => setShowDebug((s) => !s)}>Input Debug</button>
+              <button type="button" className={`${styles.debugToggle} tap`} onPointerDown={() => setShowDebug((prev) => !prev)}>Input Debug</button>
               {showDebug && (
                 <div className={styles.debugBody}>
                   <p><strong>event:</strong> {debug.event}</p>
                   <p><strong>pointerType:</strong> {debug.pointerType}</p>
                   <p><strong>target:</strong> {debug.target}</p>
                   <p><strong>capture:</strong> {debug.capture ? "active" : "inactive"}</p>
+                  <p><strong>scene:</strong> {scene}</p>
+                  <p><strong>light:</strong> {centerActivated ? "active" : "idle"}</p>
                 </div>
               )}
             </aside>
@@ -438,4 +494,16 @@ function useReducedMotion() {
   }, []);
 
   return reduced;
+}
+
+function useLowPowerMode() {
+  const [lowPower, setLowPower] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    const cores = navigator.hardwareConcurrency || 4;
+    setLowPower(cores <= 4);
+  }, []);
+
+  return lowPower;
 }
