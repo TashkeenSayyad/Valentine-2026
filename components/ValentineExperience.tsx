@@ -52,7 +52,6 @@ export function ValentineExperience() {
   const [sceneTransition, setSceneTransition] = useState<"in" | "out">("in");
   const [isHolding, setIsHolding] = useState(false);
   const [romanticLine, setRomanticLine] = useState("I love the way the universe softens when you are near.");
-  const [quoteLoading, setQuoteLoading] = useState(false);
 
   const reducedMotion = useReducedMotion();
   const lowPower = useLowPowerMode();
@@ -119,8 +118,6 @@ export function ValentineExperience() {
 
 
   const refreshRomanticLine = useCallback(async () => {
-    if (quoteLoading) return;
-    setQuoteLoading(true);
     try {
       const response = await fetch("https://api.quotable.io/random?tags=love&maxLength=110", { cache: "no-store" });
       if (!response.ok) throw new Error("quote-fetch-failed");
@@ -133,10 +130,8 @@ export function ValentineExperience() {
         "My favorite place in this world is still next to you."
       ];
       setRomanticLine(fallback[Math.floor(Math.random() * fallback.length)]);
-    } finally {
-      setQuoteLoading(false);
     }
-  }, [quoteLoading]);
+  }, []);
   const replay = useCallback((event?: React.PointerEvent<HTMLButtonElement>) => {
     if (event) updateDebug("pointerdown", event.pointerType, "begin-again", false);
     setSceneWithTime(1);
@@ -665,9 +660,6 @@ export function ValentineExperience() {
                 <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
                 <p className={styles.holdLabel}>Hold to make it ours.</p>
                 <p className={styles.romanticLine}>“{romanticLine}”</p>
-                <button type="button" className={`${styles.quoteRefresh} tap`} onPointerDown={() => { void refreshRomanticLine(); }} disabled={quoteLoading} aria-label="Fetch another romantic whisper">
-                  Another whisper
-                </button>
                 {heartPrompt && <p className={styles.skyHint}>Tap the sky to release hearts.</p>}
                 <button
                   ref={holdButtonRef}
