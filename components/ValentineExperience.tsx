@@ -684,12 +684,12 @@ export function ValentineExperience() {
               <>
                 <h2 className={styles.always}>Always, my Valentine.</h2>
                 <div className={styles.promiseStack}>
-                  <p className={styles.promiseLine}>My heart rests with you, Valentine.</p>
+                  <p className={styles.promiseLine}>My heart rests with you, my Anusha.</p>
                   <p className={styles.promiseLine}>I choose you.</p>
                   <p className={styles.promiseLine}>Today.</p>
                   <p className={styles.promiseLine}>Tomorrow.</p>
                   <p className={styles.promiseLine}>Every day.</p>
-                  <p className={styles.whisper}>I was always yours.</p>
+                  <p className={styles.whisper}>I am always yours.</p>
                 </div>
                 <button type="button" className={`${styles.replay} tap`} onPointerDown={replay}>Begin again</button>
               </>
