@@ -630,7 +630,7 @@ export function ValentineExperience() {
             {displayScene === 2 && (
               <>
                 <button type="button" aria-label="Awaken the light" className={`${styles.centerLight} tap`} onPointerDown={activateCenter} />
-                <p className={`${styles.textPrimary} ${styles.blurIn}`}>Then I found my home.</p>
+                <p className={`${styles.textPrimary} ${styles.blurIn}`}>Then I found my home, you.</p>
                 <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-2-next")}>Continue</button>
               </>
             )}
@@ -650,7 +650,6 @@ export function ValentineExperience() {
               <>
                 <p className={`${styles.textPrimary} ${styles.blurIn}`}>With you…</p>
                 <p className={`${styles.textSecondary} ${styles.blurInDelay}`}>…everything feels right.</p>
-                <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
                 <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-4-next")}>Continue</button>
               </>
             )}
