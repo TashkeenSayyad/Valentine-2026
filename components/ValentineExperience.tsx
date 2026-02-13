@@ -9,6 +9,7 @@ type Scene = 1 | 2 | 3 | 4 | 5 | 6;
 type Star = { x: number; y: number; r: number; depth: number; phase: number };
 type Dust = { x: number; y: number; depth: number; speed: number; angle: number; length: number };
 type DebugInfo = { event: string; pointerType: string; target: string; capture: boolean };
+type HeartBurst = { x: number; y: number; born: number; size: number; drift: number };
 
 const HOLD_DURATION_MS = 1500;
 const MEMORY_LINES = [
@@ -32,6 +33,7 @@ export function ValentineExperience() {
   const beamFlashRef = useRef(0);
   const wheelLockRef = useRef(false);
   const grainPatternRef = useRef<CanvasPattern | null>(null);
+  const heartBurstsRef = useRef<HeartBurst[]>([]);
 
   const ringLength = 2 * Math.PI * 22;
 
@@ -42,6 +44,7 @@ export function ValentineExperience() {
   const [showDebug, setShowDebug] = useState(false);
   const [debugEnabled, setDebugEnabled] = useState(process.env.NODE_ENV !== "production");
   const [debug, setDebug] = useState<DebugInfo>({ event: "idle", pointerType: "-", target: "-", capture: false });
+  const [heartPrompt, setHeartPrompt] = useState(false);
 
   const reducedMotion = useReducedMotion();
   const lowPower = useLowPowerMode();
@@ -105,6 +108,7 @@ export function ValentineExperience() {
     wavePulseRef.current = 0;
     shimmerRef.current = 0;
     beamFlashRef.current = 0;
+    heartBurstsRef.current = [];
     if (ringProgressRef.current) ringProgressRef.current.style.strokeDashoffset = `${ringLength}`;
   }, [ringLength, setSceneWithTime, updateDebug]);
 
@@ -128,6 +132,11 @@ export function ValentineExperience() {
       window.clearTimeout(t2);
     };
   }, [reducedMotion, scene]);
+
+
+  useEffect(() => {
+    setHeartPrompt(scene >= 4 && scene < 6);
+  }, [scene]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -426,6 +435,20 @@ export function ValentineExperience() {
         }
       }
 
+      // Interactive floating heart bursts
+      if (heartBurstsRef.current.length) {
+        const now = time;
+        heartBurstsRef.current = heartBurstsRef.current.filter((b) => now - b.born < 1800);
+        heartBurstsRef.current.forEach((b, idx) => {
+          const life = (now - b.born) / 1800;
+          const alpha = 0.65 * (1 - life);
+          const x = b.x + Math.sin((now * 0.002) + idx) * 6 + b.drift * life;
+          const y = b.y - life * 70;
+          const size = b.size * (1 - life * 0.35);
+          drawHeart(ctx, x, y, size, `rgba(238, 194, 221, ${alpha})`);
+        });
+      }
+
       // Film grain overlay
       if (grainPatternRef.current) {
         ctx.save();
@@ -449,6 +472,25 @@ export function ValentineExperience() {
       ro.disconnect();
     };
   }, [dust, lowPower, reducedMotion, ringLength, scene, setSceneWithTime, stars]);
+
+
+  const createHeartBurst = (x: number, y: number, pointerType: string) => {
+    const now = performance.now();
+    const count = lowPower ? 6 : 10;
+    for (let i = 0; i < count; i += 1) {
+      heartBurstsRef.current.push({
+        x,
+        y,
+        born: now,
+        size: 6 + Math.random() * 8,
+        drift: -16 + Math.random() * 32
+      });
+    }
+    if (heartBurstsRef.current.length > 140) {
+      heartBurstsRef.current.splice(0, heartBurstsRef.current.length - 140);
+    }
+    updateDebug("pointerdown", pointerType, "heart-burst", false);
+  };
 
   const activateCenter = (event: React.PointerEvent<HTMLButtonElement>) => {
     updateDebug("pointerdown", event.pointerType, "center-glow", false);
@@ -489,7 +531,12 @@ export function ValentineExperience() {
 
   return (
     <main className={`${styles.shell} ${scene >= 4 ? styles.warm : ""} ${scene >= 6 ? styles.finalGlow : ""}`}>
-      <div className={styles.viewport} ref={rootRef}>
+      <div className={styles.viewport} ref={rootRef} onPointerDown={(e) => {
+        if (scene >= 4 && scene < 6) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          createHeartBurst(e.clientX - rect.left, e.clientY - rect.top, e.pointerType);
+        }
+      }}>
         <canvas ref={canvasRef} className={styles.canvas} aria-hidden />
 
         <div className={styles.overlay}>
@@ -529,6 +576,12 @@ export function ValentineExperience() {
                 <p className={`${styles.textSecondary} ${styles.blurInDelay}`}>…everything feels right.</p>
                 <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
                 <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-4-next")}>Continue</button>
+                <button type="button" className={`${styles.heartAction} tap`} onPointerDown={(e) => {
+                  const r = (e.currentTarget.closest("div") as HTMLElement)?.getBoundingClientRect();
+                  const x = r ? r.width * 0.5 : 180;
+                  const y = r ? r.height * 0.58 : 420;
+                  createHeartBurst(x, y, e.pointerType);
+                }}>Send a little heart</button>
               </>
             )}
 
@@ -536,6 +589,7 @@ export function ValentineExperience() {
               <>
                 <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
                 <p className={styles.holdLabel}>Hold to make it ours.</p>
+                {heartPrompt && <p className={styles.skyHint}>Tap the sky to release hearts.</p>}
                 <button
                   ref={holdButtonRef}
                   type="button"
@@ -590,6 +644,23 @@ export function ValentineExperience() {
       </div>
     </main>
   );
+}
+
+
+function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, fill: string) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(size / 14, size / 14);
+  ctx.beginPath();
+  ctx.moveTo(0, 4);
+  ctx.bezierCurveTo(0, -3, -8, -3, -8, 2);
+  ctx.bezierCurveTo(-8, 7, -2, 9.5, 0, 12);
+  ctx.bezierCurveTo(2, 9.5, 8, 7, 8, 2);
+  ctx.bezierCurveTo(8, -3, 0, -3, 0, 4);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.restore();
 }
 
 function useReducedMotion() {

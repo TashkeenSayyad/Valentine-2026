@@ -147,6 +147,15 @@
   font-size: 0.72rem;
 }
 
+
+.skyHint {
+  margin: -2px 0 4px;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(235, 226, 252, 0.66);
+}
+
 .always {
   margin: 0;
   font-size: clamp(3.1rem, 10.5vw, 7rem);
@@ -187,7 +196,8 @@
 .centerLight,
 .holdButton,
 .replay,
-.debugToggle {
+.debugToggle,
+.heartAction {
   pointer-events: auto;
   touch-action: manipulation;
   min-height: 44px;
@@ -202,6 +212,21 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 10px 18px;
+}
+
+
+
+.heartAction {
+  border: 1px solid rgba(240, 226, 255, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(246, 233, 255, 0.16), rgba(194, 166, 240, 0.2));
+  color: rgba(247, 239, 255, 0.95);
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  padding: 9px 16px;
+  backdrop-filter: blur(7px);
 }
 
 .centerLight {
