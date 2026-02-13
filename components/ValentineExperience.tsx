@@ -38,6 +38,7 @@ export function ValentineExperience() {
   const [scene, setScene] = useState<Scene>(1);
   const [memoryVisibleCount, setMemoryVisibleCount] = useState(0);
   const [centerActivated, setCenterActivated] = useState(false);
+  const [assetReady, setAssetReady] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [debugEnabled, setDebugEnabled] = useState(process.env.NODE_ENV !== "production");
   const [debug, setDebug] = useState<DebugInfo>({ event: "idle", pointerType: "-", target: "-", capture: false });
@@ -179,6 +180,7 @@ export function ValentineExperience() {
       const main = canvas.getContext("2d");
       if (!main) return;
       grainPatternRef.current = main.createPattern(noise, "repeat");
+      setAssetReady(true);
     };
 
     const texture = new Image();
@@ -188,6 +190,7 @@ export function ValentineExperience() {
       const main = canvas.getContext("2d");
       if (!main) return;
       grainPatternRef.current = main.createPattern(texture, "repeat");
+      setAssetReady(true);
     };
     texture.onerror = createFallbackPattern;
 
@@ -251,8 +254,6 @@ export function ValentineExperience() {
       ctx.stroke();
     };
 
-    const heartPoints = heartConstellation.map((p) => ({ x: p.x * width, y: p.y * height }));
-    const namePoints = anushaTracePath.map((p) => ({ x: p.x * width, y: p.y * height }));
 
     const updateHoldRing = (now: number) => {
       if (!holdStartAtRef.current || !ringProgressRef.current) return;
@@ -297,6 +298,10 @@ export function ValentineExperience() {
       const sceneAge = (time - enteredSceneAtRef.current) / 1000;
       const px = reducedMotion ? 0 : pointerOffsetRef.current.x;
       const py = reducedMotion ? 0 : pointerOffsetRef.current.y;
+      const holdingNow = holdStartAtRef.current !== null;
+      const heartbeat = holdingNow && !reducedMotion ? 0.5 + Math.sin(time * 0.0063) * 0.5 : 0;
+      const heartPoints = heartConstellation.map((p) => ({ x: p.x * width, y: p.y * height }));
+      const namePoints = anushaTracePath.map((p) => ({ x: p.x * width, y: p.y * height }));
 
       updateHoldRing(time);
       ctx.clearRect(0, 0, width, height);
@@ -304,7 +309,7 @@ export function ValentineExperience() {
       // Moonlight beams
       const beamMotion = reducedMotion ? 0 : time * 0.000045;
       const beamLayers = lowPower ? 2 : 4;
-      const beamStrength = 0.06 + (scene >= 2 ? 0.04 : 0) + beamFlashRef.current * 0.09;
+      const beamStrength = 0.06 + (scene >= 2 ? 0.04 : 0) + beamFlashRef.current * 0.09 + heartbeat * 0.025;
       for (let i = 0; i < beamLayers; i += 1) {
         const angle = (-0.7 + i * 0.24) + beamMotion * (i + 1);
         const x = width * (0.52 + Math.sin(angle) * 0.28);
@@ -320,7 +325,7 @@ export function ValentineExperience() {
       }
       beamFlashRef.current = Math.max(0, beamFlashRef.current - 0.018);
 
-      drawAurora(time, scene >= 2 ? 1 : 0.5);
+      drawAurora(time, (scene >= 2 ? 1 : 0.5) + heartbeat * 0.12);
 
       // Galaxy dust
       dust.forEach((d, i) => {
@@ -342,7 +347,7 @@ export function ValentineExperience() {
         const depth = star.depth;
         const layer = depth > 0.66 ? 2 : depth > 0.33 ? 1 : 0;
         const twinkle = reducedMotion ? 0.9 : 0.7 + Math.sin(time * 0.0012 + star.phase) * 0.17;
-        const pull = holdStartAtRef.current ? 0.015 : 0;
+        const pull = holdingNow ? 0.01 + heartbeat * 0.012 : 0;
         const cx = width * 0.5;
         const cy = height * 0.5;
         const sxBase = star.x * width + px * (layer + 1) * 8;
@@ -382,7 +387,7 @@ export function ValentineExperience() {
           ctx.shadowBlur = 0;
         }
 
-        drawPath(heartPoints, reveal, "rgba(239, 227, 248, 0.92)", lowPower ? 1.4 : 1.9);
+        drawPath(heartPoints, reveal, `rgba(239, 227, 248, ${0.86 + heartbeat * 0.12})`, lowPower ? 1.4 : 1.9);
 
         // Eclipse reveal event
         const eclipse = Math.min(Math.max((sceneAge - 1.2) / 3, 0), 1);
@@ -494,6 +499,8 @@ export function ValentineExperience() {
                 <p className={`${styles.textPrimary} ${styles.blurIn}`}>Before you…</p>
                 <p className={`${styles.textSecondary} ${styles.blurInDelay}`}>…the world felt bigger.</p>
                 <button type="button" className={`${styles.control} tap`} onPointerDown={(e) => nextScene(e.pointerType, "scene-1-next")}>Continue</button>
+                {!assetReady && <p className={styles.loading}>Preparing the night…</p>}
+
               </>
             )}
 
