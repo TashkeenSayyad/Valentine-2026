@@ -259,10 +259,14 @@ export function ValentineExperience() {
     const wrap = areaRef.current;
     if (!wrap) return;
 
+    const target = sequencePath[picked];
+    if (!target) {
+      return;
+    }
+
     const rect = wrap.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const target = sequencePath[picked];
     const tx = target.x * rect.width;
     const ty = target.y * rect.height;
     const dist = Math.hypot(x - tx, y - ty);
@@ -271,7 +275,7 @@ export function ValentineExperience() {
       setHintPulse({ x: tx, y: ty, id: Date.now() });
       const next = picked + 1;
       setPicked(next);
-      if (next === sequencePath.length) {
+      if (next >= sequencePath.length) {
         window.setTimeout(() => setStage("ask"), reducedMotion ? 520 : 1300);
       }
     }
