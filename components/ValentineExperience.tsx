@@ -15,23 +15,34 @@ type Star = {
 };
 
 const HOLD_DURATION = 1500;
-const SNAP_DISTANCE = 44;
+const SNAP_DISTANCE = 52;
 
 export function ValentineExperience() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
+  const holdButtonRef = useRef<HTMLButtonElement>(null);
+
   const [stage, setStage] = useState<Stage>("sequence");
   const [picked, setPicked] = useState(0);
   const [hintPulse, setHintPulse] = useState<{ x: number; y: number; id: number } | null>(null);
   const [holdProgress, setHoldProgress] = useState(0);
+  const [isHolding, setIsHolding] = useState(false);
   const [noMessage, setNoMessage] = useState("");
   const [swipeX, setSwipeX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
+
+  const pointerOffset = useRef({ x: 0, y: 0 });
+  const holdStartedAt = useRef(0);
+  const swipeStart = useRef(0);
+
+  const reducedMotion = useReducedMotion();
+
   const stars = useMemo<Star[]>(() => {
     const seeded = (seed: number) => {
       const value = Math.sin(seed) * 10000;
       return value - Math.floor(value);
     };
+
     return Array.from({ length: randomStarsSeed }, (_, i) => ({
       x: seeded(i * 37.21),
       y: seeded(i * 51.77),
@@ -41,12 +52,6 @@ export function ValentineExperience() {
     }));
   }, []);
 
-  const reducedMotion = useReducedMotion();
-  const pointerOffset = useRef({ x: 0, y: 0 });
-  const holdStart = useRef<number | null>(null);
-  const holdFrame = useRef<number | null>(null);
-  const holdPointer = useRef<number | null>(null);
-
   const toScreen = useCallback((point: Vec2, w: number, h: number) => ({ x: point.x * w, y: point.y * h }), []);
 
   const resetToSequence = useCallback(() => {
@@ -54,6 +59,9 @@ export function ValentineExperience() {
     setPicked(0);
     setNoMessage("Let’s try that again.");
     setSwipeX(0);
+    setIsSwiping(false);
+    setHoldProgress(0);
+    setIsHolding(false);
   }, []);
 
   useEffect(() => {
@@ -64,9 +72,8 @@ export function ValentineExperience() {
 
   useEffect(() => {
     const element = areaRef.current;
-    if (!element || reducedMotion) {
-      return;
-    }
+    if (!element || reducedMotion) return;
+
     const onMove = (event: PointerEvent) => {
       const rect = element.getBoundingClientRect();
       const x = (event.clientX - rect.left) / rect.width - 0.5;
@@ -79,20 +86,55 @@ export function ValentineExperience() {
   }, [reducedMotion]);
 
   useEffect(() => {
+    if (!isHolding || stage !== "ask") return;
+
+    let raf = 0;
+    const tick = (now: number) => {
+      const ratio = Math.min((now - holdStartedAt.current) / HOLD_DURATION, 1);
+      setHoldProgress(ratio);
+      if (ratio >= 1) {
+        setIsHolding(false);
+        setStage("confirmed");
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isHolding, stage]);
+
+  useEffect(() => {
+    if (stage !== "ask") return;
+
+    const stop = () => {
+      setIsHolding(false);
+      setHoldProgress(0);
+    };
+
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+    window.addEventListener("blur", stop);
+
+    return () => {
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      window.removeEventListener("blur", stop);
+    };
+  }, [stage]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     const wrap = areaRef.current;
-    if (!canvas || !wrap) {
-      return;
-    }
+    if (!canvas || !wrap) return;
     const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
+    if (!context) return;
 
     let frameId = 0;
     let width = 0;
     let height = 0;
     let dpr = 1;
+    let revealStart = 0;
 
     const resize = () => {
       const rect = wrap.getBoundingClientRect();
@@ -115,6 +157,7 @@ export function ValentineExperience() {
       }
       const targetLen = total * Math.min(progress, 1);
       let drawn = 0;
+
       context.beginPath();
       context.moveTo(mapped[0].x, mapped[0].y);
       for (let i = 1; i < mapped.length; i += 1) {
@@ -139,60 +182,58 @@ export function ValentineExperience() {
       context.lineCap = "round";
       context.lineJoin = "round";
       context.shadowBlur = 18;
-      context.shadowColor = "rgba(198,174,255,0.6)";
+      context.shadowColor = "rgba(238, 164, 255, 0.45)";
       context.stroke();
       context.shadowBlur = 0;
     };
 
-    let revealStart = 0;
-
     const animate = (time: number) => {
       if (!revealStart && stage !== "sequence") revealStart = time;
       if (stage === "sequence") revealStart = 0;
+
       context.clearRect(0, 0, width, height);
 
       const px = reducedMotion ? 0 : pointerOffset.current.x;
       const py = reducedMotion ? 0 : pointerOffset.current.y;
 
       stars.forEach((star) => {
-        const twinkle = reducedMotion ? 0.9 : 0.65 + Math.sin(time * 0.0014 + star.phase) * 0.18;
-        const sx = star.x * width + px * star.depth * 16;
-        const sy = star.y * height + py * star.depth * 10;
+        const twinkle = reducedMotion ? 0.9 : 0.66 + Math.sin(time * 0.0012 + star.phase) * 0.18;
+        const sx = star.x * width + px * star.depth * 15;
+        const sy = star.y * height + py * star.depth * 11;
         context.beginPath();
         context.arc(sx, sy, star.r * twinkle, 0, Math.PI * 2);
-        context.fillStyle = `rgba(232, 228, 255, ${0.22 + twinkle * 0.45})`;
+        context.fillStyle = `rgba(244, 235, 255, ${0.2 + twinkle * 0.45})`;
         context.fill();
       });
 
       const sequenceProgress = picked / sequencePath.length;
-      drawPathAnimated(sequencePath, sequenceProgress, "rgba(189,166,255,0.88)", 1.9);
+      drawPathAnimated(sequencePath, sequenceProgress, "rgba(217,182,255,0.95)", 2);
 
       sequencePath.forEach((point, index) => {
         const pos = toScreen(point, width, height);
         const active = index < picked;
         context.beginPath();
-        context.arc(pos.x, pos.y, active ? 5.8 : 4.2, 0, Math.PI * 2);
-        context.fillStyle = active ? "rgba(255,214,186,0.96)" : "rgba(208,194,255,0.8)";
-        context.shadowBlur = active ? 18 : 8;
-        context.shadowColor = active ? "rgba(255,200,166,0.6)" : "rgba(171,150,255,0.45)";
+        context.arc(pos.x, pos.y, active ? 6.2 : 4.6, 0, Math.PI * 2);
+        context.fillStyle = active ? "rgba(255, 218, 204, 0.98)" : "rgba(222, 194, 255, 0.85)";
+        context.shadowBlur = active ? 20 : 10;
+        context.shadowColor = active ? "rgba(255, 196, 166, 0.62)" : "rgba(199, 147, 255, 0.55)";
         context.fill();
       });
 
       if (stage !== "sequence") {
         const elapsed = time - revealStart;
-        const drawSpeed = reducedMotion ? 1200 : 1800;
+        const drawSpeed = reducedMotion ? 1150 : 1750;
         const revealProgress = Math.min(elapsed / drawSpeed, 1);
-        const glow = reducedMotion ? 0.16 : 0.24;
-        drawPathAnimated(heartConstellation, revealProgress, `rgba(255,201,184,${0.85 + glow})`, 2.5);
+        drawPathAnimated(heartConstellation, revealProgress, "rgba(255, 202, 219, 0.92)", 2.6);
 
-        if (revealProgress > 0.3) {
+        if (revealProgress > 0.25) {
           heartConstellation.slice(0, -1).forEach((point) => {
             const pos = toScreen(point, width, height);
             context.beginPath();
             context.arc(pos.x, pos.y, 3.8, 0, Math.PI * 2);
-            context.fillStyle = "rgba(255,223,204,0.92)";
-            context.shadowBlur = 14;
-            context.shadowColor = "rgba(255,193,170,0.56)";
+            context.fillStyle = "rgba(255,231,238,0.95)";
+            context.shadowBlur = 18;
+            context.shadowColor = "rgba(255,176,199,0.62)";
             context.fill();
           });
         }
@@ -213,7 +254,7 @@ export function ValentineExperience() {
     };
   }, [picked, reducedMotion, stage, stars, toScreen]);
 
-  const onTap = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onTapSky = (event: React.PointerEvent<HTMLDivElement>) => {
     if (stage !== "sequence") return;
     const wrap = areaRef.current;
     if (!wrap) return;
@@ -231,58 +272,37 @@ export function ValentineExperience() {
       const next = picked + 1;
       setPicked(next);
       if (next === sequencePath.length) {
-        window.setTimeout(() => setStage("ask"), reducedMotion ? 600 : 1400);
+        window.setTimeout(() => setStage("ask"), reducedMotion ? 520 : 1300);
       }
     }
   };
 
   const beginHold = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (stage !== "ask") return;
+    event.preventDefault();
     event.stopPropagation();
-    holdPointer.current = event.pointerId;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    holdStart.current = performance.now();
-    const run = (now: number) => {
-      if (!holdStart.current) return;
-      const ratio = Math.min((now - holdStart.current) / HOLD_DURATION, 1);
-      setHoldProgress(ratio);
-      if (ratio >= 1) {
-        setStage("confirmed");
-        holdStart.current = null;
+    holdStartedAt.current = performance.now();
+    setHoldProgress(0);
+    setIsHolding(true);
+    holdButtonRef.current?.focus({ preventScroll: true });
+  };
+
+  const cancelHold = (event?: React.PointerEvent<HTMLButtonElement>) => {
+    if (event) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dist = Math.hypot(event.clientX - centerX, event.clientY - centerY);
+      if (dist <= 94 && event.type === "pointerleave") {
         return;
       }
-      holdFrame.current = requestAnimationFrame(run);
-    };
-    holdFrame.current = requestAnimationFrame(run);
-  };
+    }
 
-  const stopHold = (event?: React.PointerEvent<HTMLButtonElement>) => {
-    if (event && holdPointer.current !== null && event.pointerId !== holdPointer.current) {
-      return;
-    }
-    holdStart.current = null;
-    holdPointer.current = null;
-    if (holdFrame.current) {
-      cancelAnimationFrame(holdFrame.current);
-      holdFrame.current = null;
-    }
-    setHoldProgress(0);
-  };
-
-  const keepHoldWithinRange = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (holdPointer.current === null || event.pointerId !== holdPointer.current || !holdStart.current) {
-      return;
-    }
-    const rect = event.currentTarget.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const distance = Math.hypot(event.clientX - cx, event.clientY - cy);
-    if (distance > 86) {
-      stopHold(event);
+    if (stage === "ask") {
+      setIsHolding(false);
+      setHoldProgress(0);
     }
   };
-
-  const swipeStart = useRef(0);
 
   const onQuestionDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (stage !== "ask") return;
@@ -292,14 +312,14 @@ export function ValentineExperience() {
 
   const onQuestionMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!isSwiping || stage !== "ask") return;
-    const delta = event.clientX - swipeStart.current;
-    setSwipeX(delta);
+    setSwipeX(event.clientX - swipeStart.current);
   };
 
   const onQuestionUp = () => {
     if (!isSwiping || stage !== "ask") return;
     if (Math.abs(swipeX) > 96) {
       resetToSequence();
+      return;
     }
     setSwipeX(0);
     setIsSwiping(false);
@@ -309,29 +329,17 @@ export function ValentineExperience() {
 
   return (
     <main className={`${styles.shell} ${stage === "confirmed" ? styles.warm : ""}`}>
-      <div
-        ref={areaRef}
-        className={styles.viewport}
-        onPointerDown={onTap}
-        role="application"
-        aria-label="Constellation reveal"
-      >
+      <div ref={areaRef} className={styles.viewport} onPointerDown={onTapSky} role="application" aria-label="Constellation reveal">
         <canvas ref={canvasRef} className={styles.canvas} />
-        {hintPulse && (
-          <span
-            key={hintPulse.id}
-            className={styles.pulse}
-            style={{ left: hintPulse.x, top: hintPulse.y }}
-            aria-hidden
-          />
-        )}
+
+        {hintPulse && <span key={hintPulse.id} className={styles.pulse} style={{ left: hintPulse.x, top: hintPulse.y }} aria-hidden />}
 
         <section className={styles.copyBlock}>
           {stage === "sequence" && (
             <>
-              <p className={styles.eyebrow}>Constellation reveal</p>
-              <h1 className={styles.title}>Trace the stars, one by one.</h1>
-              <p className={styles.caption}>Follow the brighter markers to bring the sky into focus.</p>
+              <p className={styles.eyebrow}>A constellation for us</p>
+              <h1 className={styles.title}>Trace the stars and wake the heart.</h1>
+              <p className={styles.caption}>Tap near each guiding star. It will softly snap into place.</p>
               {noMessage && <p className={styles.retry}>{noMessage}</p>}
             </>
           )}
@@ -343,13 +351,13 @@ export function ValentineExperience() {
               onPointerMove={onQuestionMove}
               onPointerUp={onQuestionUp}
               onPointerCancel={onQuestionUp}
-              style={{ transform: `translateX(${swipeX}px)`, opacity: Math.max(1 - Math.abs(swipeX) / 160, 0.4) }}
+              style={{ transform: `translateX(${swipeX}px)`, opacity: Math.max(1 - Math.abs(swipeX) / 170, 0.45) }}
             >
               {stage === "ask" && (
                 <>
-                  <p className={styles.eyebrow}>A quiet question</p>
+                  <p className={styles.eyebrow}>For my love, Anusha</p>
                   <h2 className={styles.question}>Anusha, will you be my Valentine?</h2>
-                  <p className={styles.caption}>Press and hold the bright star to say yes. Swipe the question away to reset.</p>
+                  <p className={styles.caption}>Press and hold the glowing star to say yes. Swipe this line away to reset.</p>
                 </>
               )}
             </div>
@@ -357,23 +365,18 @@ export function ValentineExperience() {
 
           {stage === "ask" && (
             <button
+              ref={holdButtonRef}
               type="button"
-              className={styles.holdStar}
+              className={`${styles.holdStar} ${isHolding ? styles.holdStarActive : ""}`}
               onPointerDown={beginHold}
-              onPointerMove={keepHoldWithinRange}
-              onPointerUp={stopHold}
-              onPointerCancel={stopHold}
+              onPointerUp={cancelHold}
+              onPointerCancel={cancelHold}
+              onPointerLeave={cancelHold}
               aria-label="Press and hold to confirm yes"
             >
               <svg viewBox="0 0 56 56" className={styles.ring}>
                 <circle cx="28" cy="28" r="22" className={styles.ringTrack} />
-                <circle
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  className={styles.ringProgress}
-                  style={{ strokeDasharray: 2 * Math.PI * 22, strokeDashoffset: ringOffset }}
-                />
+                <circle cx="28" cy="28" r="22" className={styles.ringProgress} style={{ strokeDasharray: 2 * Math.PI * 22, strokeDashoffset: ringOffset }} />
               </svg>
               <span className={styles.innerStar}>✦</span>
             </button>

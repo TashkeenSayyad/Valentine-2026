@@ -2,14 +2,14 @@
   min-height: 100dvh;
   min-height: 100svh;
   position: relative;
-  color: #f8f6ff;
-  transition: background 900ms ease;
+  color: #fff7ff;
+  transition: background 850ms ease;
 }
 
 .shell.warm {
-  background: radial-gradient(circle at 15% 15%, rgba(220, 166, 255, 0.18), transparent 42%),
-    radial-gradient(circle at 82% 14%, rgba(255, 193, 162, 0.18), transparent 38%),
-    linear-gradient(160deg, #121735, #090810 70%);
+  background: radial-gradient(circle at 18% 15%, rgba(246, 166, 212, 0.18), transparent 44%),
+    radial-gradient(circle at 82% 12%, rgba(255, 200, 163, 0.2), transparent 38%),
+    linear-gradient(165deg, #1a1133, #090710 70%);
 }
 
 .viewport {
@@ -38,7 +38,7 @@
   min-height: calc(100dvh - max(26px, env(safe-area-inset-top)) - max(22px, env(safe-area-inset-bottom)));
   max-width: 560px;
   margin: 0 auto;
-  padding-bottom: 10dvh;
+  padding-bottom: 9.8dvh;
 }
 
 .eyebrow {
@@ -46,21 +46,21 @@
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.7rem;
-  color: rgba(226, 220, 255, 0.7);
+  color: rgba(244, 221, 255, 0.78);
 }
 
 .title {
   margin: 0;
-  font-size: clamp(1.8rem, 6vw, 3.35rem);
+  font-size: clamp(1.92rem, 6.1vw, 3.35rem);
   font-weight: 560;
-  line-height: 1.15;
+  line-height: 1.14;
   text-wrap: balance;
 }
 
 .question {
   margin: 0;
-  font-size: clamp(1.7rem, 5.9vw, 3.2rem);
-  font-weight: 530;
+  font-size: clamp(1.72rem, 6vw, 3.22rem);
+  font-weight: 540;
   line-height: 1.16;
   text-wrap: balance;
 }
@@ -68,34 +68,40 @@
 .caption {
   margin-top: 14px;
   max-width: 42ch;
-  color: rgba(224, 219, 255, 0.78);
-  font-size: 0.95rem;
+  color: rgba(243, 230, 255, 0.82);
+  font-size: 0.96rem;
   line-height: 1.45;
 }
 
 .retry {
   margin-top: 16px;
-  color: rgba(255, 219, 194, 0.87);
+  color: rgba(255, 224, 201, 0.9);
 }
 
 .questionWrap {
-  transition: transform 320ms ease, opacity 320ms ease;
+  transition: transform 330ms ease, opacity 330ms ease;
   will-change: transform;
 }
 
 .holdStar {
-  width: 82px;
-  height: 82px;
+  width: 90px;
+  height: 90px;
   margin-top: 30px;
   border: none;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 32%, #ffe4c9, #f4be95 75%);
+  background: radial-gradient(circle at 38% 34%, #fff1f6, #ffc4d8 72%);
   position: relative;
   display: grid;
   place-items: center;
   cursor: pointer;
   touch-action: none;
-  box-shadow: 0 0 28px rgba(255, 179, 139, 0.62), inset 0 0 8px rgba(255, 250, 238, 0.65);
+  box-shadow: 0 0 34px rgba(255, 176, 212, 0.58), inset 0 0 11px rgba(255, 248, 252, 0.84);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.holdStarActive {
+  transform: scale(0.985);
+  box-shadow: 0 0 40px rgba(255, 161, 203, 0.72), inset 0 0 13px rgba(255, 250, 252, 0.9);
 }
 
 .innerStar {
@@ -103,8 +109,8 @@
   inset: 0;
   display: grid;
   place-items: center;
-  color: #4f2f24;
-  font-size: 1.2rem;
+  color: #6d2b43;
+  font-size: 1.35rem;
 }
 
 .ring {
@@ -122,11 +128,11 @@
 }
 
 .ringTrack {
-  stroke: rgba(228, 221, 255, 0.3);
+  stroke: rgba(244, 225, 255, 0.36);
 }
 
 .ringProgress {
-  stroke: rgba(255, 214, 192, 0.95);
+  stroke: rgba(255, 223, 235, 0.98);
   transition: stroke-dashoffset 30ms linear;
 }
 
@@ -135,14 +141,14 @@
   max-width: 420px;
   padding: 24px 22px;
   border-radius: 18px;
-  background: linear-gradient(160deg, rgba(24, 20, 42, 0.78), rgba(18, 15, 32, 0.5));
-  border: 1px solid rgba(233, 226, 255, 0.18);
+  background: linear-gradient(160deg, rgba(35, 18, 47, 0.76), rgba(25, 14, 31, 0.52));
+  border: 1px solid rgba(245, 221, 255, 0.23);
   backdrop-filter: blur(8px);
 }
 
 .cardTitle {
   margin: 0;
-  font-weight: 510;
+  font-weight: 520;
 }
 
 .details {
@@ -157,20 +163,20 @@
 }
 
 .details dt {
-  color: rgba(220, 214, 249, 0.78);
+  color: rgba(241, 221, 255, 0.78);
 }
 
 .details dd {
   margin: 0;
   letter-spacing: 0.08em;
-  color: rgba(255, 225, 204, 0.95);
+  color: rgba(255, 231, 214, 0.97);
 }
 
 .replay {
   margin-top: 20px;
   border: none;
   background: transparent;
-  color: rgba(232, 225, 255, 0.92);
+  color: rgba(248, 232, 255, 0.95);
   text-decoration: underline;
   text-underline-offset: 3px;
   padding: 0;
@@ -179,23 +185,23 @@
 
 .pulse {
   position: absolute;
-  width: 18px;
-  height: 18px;
-  margin-left: -9px;
-  margin-top: -9px;
-  border: 1px solid rgba(255, 230, 198, 0.85);
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 1px solid rgba(255, 214, 230, 0.95);
   border-radius: 50%;
   pointer-events: none;
-  animation: pop 360ms ease-out forwards;
+  animation: pop 380ms ease-out forwards;
 }
 
 @keyframes pop {
   0% {
     transform: scale(0.45);
-    opacity: 0.85;
+    opacity: 0.88;
   }
   100% {
-    transform: scale(2.7);
+    transform: scale(2.9);
     opacity: 0;
   }
 }
@@ -203,7 +209,8 @@
 @media (prefers-reduced-motion: reduce) {
   .questionWrap,
   .ringProgress,
-  .shell {
+  .shell,
+  .holdStar {
     transition-duration: 0ms;
   }
 
