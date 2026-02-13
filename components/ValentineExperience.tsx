@@ -36,6 +36,7 @@ export function ValentineExperience() {
   const grainPatternRef = useRef<CanvasPattern | null>(null);
   const haloPatternRef = useRef<CanvasPattern | null>(null);
   const heartBurstsRef = useRef<HeartBurst[]>([]);
+  const passiveHeartAtRef = useRef(0);
 
   const ringLength = 2 * Math.PI * 22;
 
@@ -148,6 +149,7 @@ export function ValentineExperience() {
     shimmerRef.current = 0;
     beamFlashRef.current = 0;
     heartBurstsRef.current = [];
+    passiveHeartAtRef.current = 0;
     if (ringProgressRef.current) ringProgressRef.current.style.strokeDashoffset = `${ringLength}`;
   }, [ringLength, setSceneWithTime, updateDebug]);
 
@@ -468,6 +470,27 @@ export function ValentineExperience() {
         }
       }
 
+      // Passive romantic hearts (gentle ambient drift)
+      if (displayScene >= 4 && !reducedMotion) {
+        const interval = lowPower ? 3200 : 2400;
+        if (time - passiveHeartAtRef.current > interval) {
+          passiveHeartAtRef.current = time;
+          const ambientCount = lowPower ? 1 : 2;
+          for (let i = 0; i < ambientCount; i += 1) {
+            heartBurstsRef.current.push({
+              x: width * (0.34 + Math.random() * 0.32),
+              y: height * (0.7 + Math.random() * 0.18),
+              born: time - Math.random() * 160,
+              size: 5 + Math.random() * 5,
+              drift: -10 + Math.random() * 20
+            });
+          }
+          if (heartBurstsRef.current.length > 140) {
+            heartBurstsRef.current.splice(0, heartBurstsRef.current.length - 140);
+          }
+        }
+      }
+
       // Interactive floating heart bursts
       if (heartBurstsRef.current.length) {
         const now = time;
@@ -642,8 +665,8 @@ export function ValentineExperience() {
                 <h1 className={styles.question}>Anusha,<br />will you be my Valentine?</h1>
                 <p className={styles.holdLabel}>Hold to make it ours.</p>
                 <p className={styles.romanticLine}>“{romanticLine}”</p>
-                <button type="button" className={`${styles.quoteRefresh} tap`} onPointerDown={() => { void refreshRomanticLine(); }}>
-                  {quoteLoading ? "Listening to the stars…" : "Another whisper"}
+                <button type="button" className={`${styles.quoteRefresh} tap`} onPointerDown={() => { void refreshRomanticLine(); }} disabled={quoteLoading} aria-label="Fetch another romantic whisper">
+                  Another whisper
                 </button>
                 {heartPrompt && <p className={styles.skyHint}>Tap the sky to release hearts.</p>}
                 <button
